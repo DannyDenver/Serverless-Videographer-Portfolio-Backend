@@ -2,16 +2,17 @@ import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayProxyEvent } f
 import { deleteVideo } from "../../businessLogic/video";
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const deletedVideoUrl = await deleteVideo(event); 
+  const deletedVideoUrl = await deleteVideo(event);
+
 
     return {
-        statusCode: 204,
+        statusCode: 200,
         headers: {
           "Access-Control-Allow-Origin" : "*",
           "Access-Control-Allow-Credentials" : true
         },
         body: JSON.stringify({
-          deletedVideoUrl: deletedVideoUrl
+          deletedVideoUrl
         })
     }
 }
