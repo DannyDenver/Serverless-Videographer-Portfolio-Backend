@@ -11,7 +11,7 @@ export async function getVideos(event: APIGatewayProxyEvent): Promise<Video[]> {
     return await videoAccess.getVideos(videographerId);
 }
 
-export async function addVideo(event: APIGatewayProxyEvent) {
+export async function addVideo(event: APIGatewayProxyEvent): Promise<string> {
     const jwtUserId = getUserId(event);
     const videographerId = event.pathParameters.videographerId.replace('%7C', '|');
     const video: Video = JSON.parse(event.body);
@@ -33,7 +33,7 @@ export async function addVideo(event: APIGatewayProxyEvent) {
     return uploadUrl;
 }
 
-export async function deleteVideo(event: APIGatewayProxyEvent) {
+export async function deleteVideo(event: APIGatewayProxyEvent): Promise<string> {
     const jwtUserId = getUserId(event);
     const videographerId = event.pathParameters.videographerId.replace('%7C', '|');
     const videoId = event.pathParameters.videoUrl;

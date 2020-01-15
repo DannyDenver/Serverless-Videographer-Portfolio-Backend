@@ -41,7 +41,7 @@ export class VideographerAccess {
     return videographer
   }
 
-  async updateVideographer(videographerId: string, updatedVideographer: UpdateVideographerRequest) {
+  async updateVideographer(videographerId: string, updatedVideographer: UpdateVideographerRequest): Promise<Videographer> {
     const result = await this.docClient.update({
       TableName: this.vidographersTable,
       Key: {
@@ -94,7 +94,7 @@ export class VideographerAccess {
     return items as Videographer[]
   }
 
-  async videographerExists(videographerId: string) {
+  async videographerExists(videographerId: string): Promise<boolean> {
     const result = await this.docClient.get({
       TableName: this.vidographersTable,
       Key: {

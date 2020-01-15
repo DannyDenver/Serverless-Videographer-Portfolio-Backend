@@ -51,7 +51,7 @@ export class VideoAccess {
     }).promise()
   }
 
-  async getVideos(videographerId: string) {
+  async getVideos(videographerId: string): Promise<Video[]> {
     const result = await this.docClient.query({
       TableName: this.videoTable,
       KeyConditionExpression: 'videographerId = :videographerId',
