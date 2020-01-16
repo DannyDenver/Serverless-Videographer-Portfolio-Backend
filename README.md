@@ -77,6 +77,7 @@ serverless invoke local --function functionName
 ## Relevant Links
 - https://serverless.com/framework/docs/providers/aws/
 - https://docs.aws.amazon.com/
+- https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SES.html#sendCustomVerificationEmail-property
 
 ## Project Status
 Currently in development. 
