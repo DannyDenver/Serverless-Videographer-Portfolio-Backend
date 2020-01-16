@@ -9,7 +9,7 @@ const logger = createLogger('todos');
 const imagesAccess = new ImagesAccess();
 const videographerAccess = new VideographerAccess();
 
-export async function generateUploadUrl(event: APIGatewayEvent): Promise<string> {
+export async function addProfilePicture(event: APIGatewayEvent): Promise<string> {
     const videographerId = decodeURI(event.pathParameters.videographerId);
     const userId = getUserId(event);
 
