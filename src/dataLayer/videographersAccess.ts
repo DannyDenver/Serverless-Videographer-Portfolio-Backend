@@ -14,9 +14,7 @@ export class VideographerAccess {
   }
 
   async addProfilePicture(videographerId: string) {
-    const link = `https://${this.bucketName}.s3.amazonaws.com/${videographerId}`
-
-    console.log('link', link)
+    const link = `https://${this.bucketName}.s3.amazonaws.com/${videographerId}`;
 
     await this.docClient.update({
       TableName: this.vidographersTable,
@@ -29,16 +27,16 @@ export class VideographerAccess {
         ':pictureUrl': link,
         ':videographerId': videographerId
       },
-    }).promise()
+    }).promise();
   }
 
   async createVideographer(videographer: Videographer) {
     await this.docClient.put({
       TableName: this.vidographersTable,
       Item: videographer
-    }).promise()
+    }).promise();
 
-    return videographer
+    return videographer;
   }
 
   async updateVideographer(videographerId: string, updatedVideographer: UpdateVideographerRequest): Promise<Videographer> {
@@ -61,11 +59,9 @@ export class VideographerAccess {
         ':email': updatedVideographer.email
       },
       ReturnValues: 'ALL_NEW'
-    }).promise()
+    }).promise();
 
-    console.log('result after update', result)
-
-    return result.Attributes as Videographer
+    return result.Attributes as Videographer;
   }
 
   async getVideographer(videographerId: string): Promise<Videographer> {
@@ -84,14 +80,11 @@ export class VideographerAccess {
   }
 
   async getVideographers(): Promise<Videographer[]> {
-    console.log('Getting all videographers')
-
     const result = await this.docClient.scan({
       TableName: this.vidographersTable
     }).promise()
 
-    const items = result.Items
-    return items as Videographer[]
+    return result.Items as Videographer[]
   }
 
   async videographerExists(videographerId: string): Promise<boolean> {

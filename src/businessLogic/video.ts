@@ -3,22 +3,27 @@ import * as uuid from 'uuid'
 import { Video } from "../models/Video";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { getUserId } from "../lambda/utils"
+import { createLogger } from "../utils/logger";
 
 const videoAccess = new VideoAccess();
+const logger = createLogger('video')
 
 export async function getVideos(event: APIGatewayProxyEvent): Promise<Video[]> {
-    const videographerId = event.pathParameters.videographerId.replace('%7C', '|');
+    const videographerId = decodeURI(event.pathParameters.videographerId);
+    logger.info(`Getting videos for videographer ${videographerId}.`)
+
     return await videoAccess.getVideos(videographerId);
 }
 
 export async function addVideo(event: APIGatewayProxyEvent): Promise<string> {
     const jwtUserId = getUserId(event);
-    const videographerId = event.pathParameters.videographerId.replace('%7C', '|');
+    const videographerId = decodeURI(event.pathParameters.videographerId);
     const video: Video = JSON.parse(event.body);
 
     if (jwtUserId !== videographerId || video.videographerId !== jwtUserId) {
+        logger.alert(`User ${jwtUserId} attempted to add a video to videographer ${videographerId}'s portfolio`, video)
         throw new Error("User cannot update other profiles");
-    }
+    };
 
     const videoId = uuid.v4();
     const uploadUrl = videoAccess.generateUploadUrl(videoId);
@@ -35,14 +40,15 @@ export async function addVideo(event: APIGatewayProxyEvent): Promise<string> {
 
 export async function deleteVideo(event: APIGatewayProxyEvent): Promise<string> {
     const jwtUserId = getUserId(event);
-    const videographerId = event.pathParameters.videographerId.replace('%7C', '|');
+    const videographerId = decodeURI(event.pathParameters.videographerId);
     const videoId = event.pathParameters.videoUrl;
 
     if (jwtUserId !== videographerId) {
+        logger.alert(`User ${jwtUserId} attempted to delete video ${videoId} from videographer ${videographerId}'s portfolio`);
         throw new Error("User cannot update other profiles");
-    }
+    };
 
-    console.log(videographerId, videoId)
+    console.log(`Deleting video ${videoId} from videographer ${videographerId}`);
 
     await videoAccess.deleteVideo(videographerId, videoId);
 

@@ -5,7 +5,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     const uploadUrl = await addVideo(event);
 
     return {
-        statusCode: 200,
+        statusCode: 201,
         headers: {
           'Access-Control-Allow-Origin': '*'
         },

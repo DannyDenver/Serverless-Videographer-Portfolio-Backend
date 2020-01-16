@@ -4,7 +4,6 @@ import { deleteVideo } from "../../businessLogic/video";
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const deletedVideoUrl = await deleteVideo(event);
 
-
     return {
         statusCode: 200,
         headers: {

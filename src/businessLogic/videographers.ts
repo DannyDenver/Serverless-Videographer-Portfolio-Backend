@@ -15,22 +15,23 @@ export async function getVideographers(event: APIGatewayProxyEvent): Promise<Vid
 
     if (token) {
         const videographerId = parseUserId(token)
-        if (videographerId) {
-            const videographerExists = await videographerAccess.videographerExists(videographerId)
-            if (!videographerExists) {
-                const newVideographer: Videographer = {
-                    id: videographerId
-                }
-                await videographerAccess.createVideographer(newVideographer)
+        const videographerExists = await videographerAccess.videographerExists(videographerId)
+        if (!videographerExists) {
+            const newVideographer: Videographer = {
+                id: videographerId
             }
-        }
+            logger.info(`Creating videographer.`, newVideographer);
+
+            await videographerAccess.createVideographer(newVideographer)
+        }        
     }
 
+    logger.info('Getting all videographers')
     return await videographerAccess.getVideographers()
 }
 
 export async function getVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
-    const videographerId = event.pathParameters.videographerId.replace('%7C', '|')
+    const videographerId = decodeURI(event.pathParameters.videographerId);
     return await videographerAccess.getVideographer(videographerId)
 }
 

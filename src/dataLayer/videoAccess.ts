@@ -46,7 +46,6 @@ export class VideoAccess {
       ConditionExpression: 'id = :id',
       ExpressionAttributeValues: {
         ':id': id,
-        
       }
     }).promise()
   }
