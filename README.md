@@ -74,5 +74,9 @@ serverless invoke local --function functionName
 - Body: Videographer object
 - Returns: updated videographer object
 
-### Project Status
+## Relevant Links
+- https://serverless.com/framework/docs/providers/aws/
+- https://docs.aws.amazon.com/
+
+## Project Status
 Currently in development. 
