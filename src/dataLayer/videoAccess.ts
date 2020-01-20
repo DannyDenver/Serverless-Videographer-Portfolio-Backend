@@ -38,6 +38,26 @@ export class VideoAccess {
     }).promise()
   }
 
+  async editVideo(video: Video, videoId: string): Promise<Video> {
+    const result = await this.docClient.update({
+      TableName: this.videoTable,
+      Key: {
+        videographerId: video.videographerId,
+        id: videoId
+      },
+      ConditionExpression: 'id = :id',
+      UpdateExpression: 'set title = :title, description = :description',
+      ExpressionAttributeValues: {
+        ':title': video.title,
+        ':description': video.description,
+        ':id': video.id
+      },
+      ReturnValues: 'ALL_NEW'
+    }).promise()
+
+    return result.Attributes as Video;
+  }
+
   async deleteVideo(videographerId: string, id: string) {
     return await this.docClient.delete({
       TableName: this.videoTable,

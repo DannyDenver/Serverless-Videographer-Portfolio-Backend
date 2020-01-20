@@ -205,6 +205,31 @@ functions:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
   
+  EditVideo: 
+    handler: src/lambda/http/editVideo.handler
+    events:
+      - http:
+          method: patch
+          path: videos/{videoId}
+          cors: true
+          authorizer: Auth
+          documentation:
+            summary: Edit a video
+            description: Add a video in a videographer's portfolio
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.VIDEOS_S3_BUCKET}/*
+      - Effect: Allow
+        Action: 
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
+
   DeleteVideo: 
     handler: src/lambda/http/deleteVideo.handler
     events:

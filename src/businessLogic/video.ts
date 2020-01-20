@@ -21,6 +21,17 @@ export async function getVideo(event: APIGatewayProxyEvent): Promise<Video> {
     return await videoAccess.getVideo(videoId);
 }
 
+export async function editVideo(event: APIGatewayProxyEvent): Promise<Video> {
+    const videoId = event.pathParameters.videoId
+    const video: Video = JSON.parse(event.body);
+    const jwtUserId = getUserId(event);
+
+    if (video.videographerId !== jwtUserId) {
+        throw new Error("Cannot update other videographer's video.")
+    }
+
+    return await videoAccess.editVideo(video, videoId);
+}
 export async function addVideo(event: APIGatewayProxyEvent): Promise<string> {
     const jwtUserId = getUserId(event);
     const videographerId = decodeURI(event.pathParameters.videographerId);
