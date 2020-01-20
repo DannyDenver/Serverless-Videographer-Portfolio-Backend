@@ -139,6 +139,26 @@ functions:
         - "xray:PutTraceSegments"
         Resource: "*"    
 
+  GetVideo:
+    handler: src/lambda/http/getVideo.handler
+    events:
+      - http:
+          method: get
+          path: videos/{videoId}
+          corst: true
+          documentation:
+            summary: Get a single video
+            description: Gets a single video from a videographer's portfolio
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/${self:provider.environment.VIDEO_ID_INDEX}
+
   GetVideos:
     handler: src/lambda/http/getVideos.handler
     events:
@@ -451,6 +471,13 @@ resources:
             KeyType: HASH
           - AttributeName: id
             KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.VIDEO_ID_INDEX}
+            KeySchema:
+            - AttributeName: id
+              KeyType: HASH
+            Projection: 
+              ProjectionType: ALL
         StreamSpecification: 
           StreamViewType: NEW_IMAGE
         BillingMode: PAY_PER_REQUEST

@@ -2,6 +2,7 @@ import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { Video } from '../models/Video'
+import { getVideo } from '../businessLogic/video'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -14,7 +15,8 @@ export class VideoAccess {
     private readonly docClient: DocumentClient = createDynamoDBClient(),
     private readonly bucketName = process.env.VIDEOS_S3_BUCKET,
     private readonly urlExpiration = +process.env.SIGNED_URL_EXPIRATION,
-    private readonly videoTable = process.env.VIDEOS_TABLE) {
+    private readonly videoTable = process.env.VIDEOS_TABLE,
+    private readonly videoIdIndex = process.env.VIDEO_ID_INDEX) {
   }
 
   generateUploadUrl(videoId: string): string {
@@ -60,6 +62,19 @@ export class VideoAccess {
     }).promise();
 
     return result.Items as Video[];
+  }
+
+  async getVideo(videoId: string): Promise<Video> {
+    const result = await this.docClient.query({
+      TableName: this.videoTable,
+      IndexName: this.videoIdIndex,
+      KeyConditionExpression: 'id = :videoId',
+      ExpressionAttributeValues: {
+        ':videoId': videoId
+      }
+    }).promise();
+  
+    return result.Items[0] as Video;
   }
 }
 
