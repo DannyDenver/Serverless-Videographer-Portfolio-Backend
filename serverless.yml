@@ -315,6 +315,24 @@ functions:
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}
 
+  SendNewVideoNotificationEmail:
+    handler: src/lambda/dynamodb/newVideoNotification.handler
+    iamRoleStatementsName: newVideoNotificationRole
+    events:
+      - stream:
+          type: dynamodb
+          arn: !GetAtt VideosDynamoDBTable.StreamArn
+          maximumRetryAttempts: 4
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+  
 resources:
   Resources:
     GatewayResponseDefault4XX:
@@ -496,6 +514,8 @@ resources:
             KeyType: HASH
           - AttributeName: id
             KeyType: RANGE
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.VIDEO_ID_INDEX}
             KeySchema:
@@ -503,8 +523,6 @@ resources:
               KeyType: HASH
             Projection: 
               ProjectionType: ALL
-        StreamSpecification: 
-          StreamViewType: NEW_IMAGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.VIDEOS_TABLE}
 
