@@ -8,8 +8,17 @@ const XAWS = AWSXRay.captureAWS(AWS)
 const ses = new XAWS.SES()
 
 export class EmailService {
-
     sendNewVideoNotification(emailConfiguration: NewVideoNotification) {
         console.log(emailConfiguration);
+
+    };
+
+
+    verifyEmail(emailAddress: string) {
+        ses.sendCustomVerificationEmail({
+            EmailAddress: emailAddress,
+            TemplateName: 'VerifySubscriberTemplate',
+        })
     }
+
 }

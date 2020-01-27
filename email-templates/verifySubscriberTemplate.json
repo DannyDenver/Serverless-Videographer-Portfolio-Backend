@@ -1,0 +1,7 @@
+{
+    "Template": {
+      "TemplateName": "VerifySubscriberTemplate",
+      "SubjectPart": "Verify your Email to subscribe to a Video Portfolio",
+      "HtmlPart": "<h1>Please verify your email address to complete your subscription to a Video Portfolio.</h1>"
+    }
+  }

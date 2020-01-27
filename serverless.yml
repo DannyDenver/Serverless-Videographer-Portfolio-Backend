@@ -18,6 +18,15 @@ provider:
   name: aws
   runtime: nodejs12.x
 
+  usagePlan:
+    quota:
+      limit: 1000
+      offset: 2
+      period: MONTH
+    throttle:
+      burstLimit: 200
+      rateLimit: 100
+
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
 
@@ -315,6 +324,25 @@ functions:
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}
 
+  VerifyEmail:
+    handler: src/lambda/http/verifyEmail.handler
+    events:
+      - http:
+          method: post
+          path: verifyEmail/{emailAddress}
+          cors: true
+          documentation:
+            summary: Verifies an email
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - ses:SendEmail
+        Resource: '*'
+
   SendNewVideoNotificationEmail:
     handler: src/lambda/dynamodb/newVideoNotification.handler
     iamRoleStatementsName: newVideoNotificationRole
@@ -332,7 +360,7 @@ functions:
         Action:
           - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
-  
+
 resources:
   Resources:
     GatewayResponseDefault4XX:

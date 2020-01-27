@@ -1,4 +1,4 @@
-import { DynamoDBStreamEvent } from "aws-lambda";
+import { DynamoDBStreamEvent, APIGatewayEvent } from "aws-lambda";
 import { VideographerAccess } from "../dataLayer/videographersAccess";
 import { EmailService } from "../serviceLayer/emailService";
 import { NewVideoNotification } from "../models/NewVideoNotification";
@@ -32,4 +32,9 @@ export async function sendNewVideoNotification(event: DynamoDBStreamEvent) {
             emailService.sendNewVideoNotification(newVideo);
         }       
     }
+}
+
+export async function verifyEmail(event: APIGatewayEvent) {
+    const email = event.pathParameters.emailAddress;
+    emailService.verifyEmail(email);
 }

@@ -1,0 +1,7 @@
+{
+    "Template": {
+      "TemplateName": "NewVideo",
+      "SubjectPart": "{{name}} has posted a new video!",
+      "HtmlPart": "<h1>{{name}} has posted a new video.</h1>"
+    }
+  }
