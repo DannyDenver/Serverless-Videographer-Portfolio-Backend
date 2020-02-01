@@ -23,18 +23,18 @@ export async function sendNewVideoNotification(event: DynamoDBStreamEvent) {
             title: video.title.S,
             description: video.description.S,
             videographerName: videographer.firstName + ' ' + videographer.lastName,
-            receiver: null
+            receivers: videographer.subscribers
         };
 
-        for(const subscriber of videographer.subscribers) {
-            newVideo["receiver"] = subscriber;
-
-            emailService.sendNewVideoNotification(newVideo);
-        }       
+        await emailService.sendNewVideoNotification(newVideo);
     }
 }
 
 export async function verifyEmail(event: APIGatewayEvent) {
-    const email = event.pathParameters.emailAddress;
-    emailService.verifyEmail(email);
+    const email = event.pathParameters.email;
+    console.log('Sending verification email to ' + email);
+
+
+
+    await emailService.verifyEmail(email);
 }

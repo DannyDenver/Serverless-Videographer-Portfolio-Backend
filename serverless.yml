@@ -329,7 +329,7 @@ functions:
     events:
       - http:
           method: post
-          path: verifyEmail/{emailAddress}
+          path: videographers/{videographerId}/addSubscriber/{email}
           cors: true
           documentation:
             summary: Verifies an email
@@ -340,8 +340,12 @@ functions:
         Resource: "*"
       - Effect: Allow
         Action:
-          - ses:SendEmail
+          - ses:VerifyEmailAddress
         Resource: '*'
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
 
   SendNewVideoNotificationEmail:
     handler: src/lambda/dynamodb/newVideoNotification.handler
@@ -360,6 +364,10 @@ functions:
         Action:
           - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+      - Effect: Allow
+        Action: 
+          - ses:sendTemplatedEmail
+        Resource: '*'
 
 resources:
   Resources:
