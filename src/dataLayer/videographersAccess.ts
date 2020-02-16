@@ -39,6 +39,28 @@ export class VideographerAccess {
     return videographer;
   }
 
+  async addSubscriber(videographerId: string, email: string) {
+    console.log("trying to add subscriber");
+    const result = await this.docClient.update({
+      TableName: this.vidographersTable,
+      Key: {
+        id: videographerId,
+      },
+      ConditionExpression: 'id = :videographerId',
+      UpdateExpression: "SET #subscribers = list_append(if_not_exists(#subscribers, :empty_list), :email)",
+      ExpressionAttributeNames: {
+        '#subscribers': 'subscribers'
+      },
+      ExpressionAttributeValues: {
+        ':videographerId': videographerId,
+        ':email': [email],
+        ':empty_list': []
+      },
+      ReturnValues: 'ALL_NEW'
+    }).promise();
+
+    return result.Attributes as Videographer;  }
+
   async updateVideographer(videographerId: string, updatedVideographer: UpdateVideographerRequest): Promise<Videographer> {
     const result = await this.docClient.update({
       TableName: this.vidographersTable,

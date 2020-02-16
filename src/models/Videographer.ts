@@ -6,4 +6,5 @@ export interface Videographer {
     bio?: string
     pictureUrl?: string
     email?: string
+    subscribers?: string[]
 }

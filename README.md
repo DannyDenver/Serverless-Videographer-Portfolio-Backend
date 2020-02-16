@@ -74,6 +74,9 @@ serverless invoke local --function functionName
 - Body: Videographer object
 - Returns: updated videographer object
 
+### Add a template
+- aws ses create-template --cli-input-json file://{{filename}}.json
+
 ## Relevant Links
 - https://serverless.com/framework/docs/providers/aws/
 - https://docs.aws.amazon.com/
