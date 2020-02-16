@@ -17,17 +17,11 @@ export class EmailService {
                 emailConfiguration.receivers
             },
             "Source": "danny.denver80204@gmail.com",
-            "Template": 'NewVideo',
+            "Template": 'NewVideoAlert',
             "TemplateData": `{ \"name\": "` + emailConfiguration.videographerName +  `" }`,
         }
 
         console.log("send templated email", params);
-
-        // const raw: AWS.SES.SendRawEmailRequest = {
-        //     Destinations
-        // }
-
-        // await ses.sendRawEmail({}).promise();
 
         await ses.sendTemplatedEmail(params).promise();
     };

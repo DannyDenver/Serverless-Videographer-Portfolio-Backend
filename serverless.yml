@@ -39,7 +39,7 @@ provider:
     CONNECTIONS_TABLE: Connections-videographer-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
     VIDEO_ID_INDEX: VideoIdIndex
-
+    UPDATE_VIDEOGRAPHER_QUEUE: Update-videographer-queue-${self:provider.stage}
 
 custom:
   topicName: emailsTopic-${self:provider.stage}
@@ -189,6 +189,42 @@ functions:
           - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
         
+  UpdateVideographerQueue:
+    handler: src/lambda/http/updateVideographerQueue.handler
+    iamRoleStatementsName: updateVideographQueueRole
+    events:
+      - http:
+          method: get
+          path: videographer/queue
+          cors: true
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - sqs:SendMessage
+          - sqs:getQueueUrl
+        Resource:
+          Fn::GetAtt: [ UpdateVideographerQueue, Arn]
+
+  UpdateVideogreapherFromQueue:
+    handler: src/lambda/sqs/updateVideographerFromQueue.handler
+    iamRoleStatementsName: updateVideoGraphQueRole
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - UpdateVideographerQueue
+              - Arn
+          batchSize: 5
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+
   AddVideo: 
     handler: src/lambda/http/addVideo.handler
     events:
@@ -371,6 +407,11 @@ functions:
 
 resources:
   Resources:
+    UpdateVideographerQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:provider.environment.UPDATE_VIDEOGRAPHER_QUEUE}
+
     GatewayResponseDefault4XX:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
