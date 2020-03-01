@@ -14,20 +14,26 @@ export async function getVideographers(event: APIGatewayProxyEvent): Promise<Vid
     const token = getJWT(event)
 
     if (token) {
-        const videographerId = parseUserId(token)
+        let auth0Id = parseUserId(token);
+        let videographerId = auth0Id.includes("|") ? auth0Id.split("|")[1] : auth0Id;
         const videographerExists = await videographerAccess.videographerExists(videographerId)
         if (!videographerExists) {
+            if (videographerId.includes("|")){
+                videographerId = videographerId.split("|")[1];
+            }
+
             const newVideographer: Videographer = {
                 id: videographerId
-            }
+            };
+
             logger.info(`Creating videographer.`, newVideographer);
 
-            await videographerAccess.createVideographer(newVideographer)
+            await videographerAccess.createVideographer(newVideographer);
         }        
     }
 
-    logger.info('Getting all videographers')
-    return await videographerAccess.getVideographers()
+    logger.info('Getting all videographers');
+    return await videographerAccess.getVideographers();
 }
 
 export async function getVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
