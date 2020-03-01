@@ -37,7 +37,7 @@ export async function getVideographers(event: APIGatewayProxyEvent): Promise<Vid
 }
 
 export async function getVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
-    const videographerId = decodeURI(event.pathParameters.videographerId);
+    const videographerId = event.pathParameters.videographerId.includes("|") ? decodeURI(event.pathParameters.videographerId).split("|")[1] : event.pathParameters.videographerId;
     return await videographerAccess.getVideographer(videographerId)
 }
 
