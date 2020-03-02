@@ -19,7 +19,12 @@ export function getUserId(event: APIGatewayProxyEvent): string {
   console.log('jwt token', token)
   if (!token) return null;
 
-  return parseUserId(token)
+  let authOId = parseUserId(token)
+  if (authOId.includes("|")) { 
+    return authOId.split("|")[1];
+  }
+
+  return authOId
 }
 
 export function getJWT(event: APIGatewayProxyEvent): string {

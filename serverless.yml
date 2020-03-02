@@ -18,6 +18,15 @@ provider:
   name: aws
   runtime: nodejs12.x
 
+  usagePlan:
+    quota:
+      limit: 1000
+      offset: 2
+      period: MONTH
+    throttle:
+      burstLimit: 200
+      rateLimit: 100
+
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
 
@@ -30,7 +39,7 @@ provider:
     CONNECTIONS_TABLE: Connections-videographer-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
     VIDEO_ID_INDEX: VideoIdIndex
-
+    UPDATE_VIDEOGRAPHER_QUEUE: Update-videographer-queue-${self:provider.stage}
 
 custom:
   topicName: emailsTopic-${self:provider.stage}
@@ -180,6 +189,42 @@ functions:
           - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
         
+  UpdateVideographerQueue:
+    handler: src/lambda/http/updateVideographerQueue.handler
+    iamRoleStatementsName: updateVideographQueueRole
+    events:
+      - http:
+          method: get
+          path: videographer/queue
+          cors: true
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - sqs:SendMessage
+          - sqs:getQueueUrl
+        Resource:
+          Fn::GetAtt: [ UpdateVideographerQueue, Arn]
+
+  UpdateVideogreapherFromQueue:
+    handler: src/lambda/sqs/updateVideographerFromQueue.handler
+    iamRoleStatementsName: updateVideoGraphQueRole
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - UpdateVideographerQueue
+              - Arn
+          batchSize: 5
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+
   AddVideo: 
     handler: src/lambda/http/addVideo.handler
     events:
@@ -315,8 +360,58 @@ functions:
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}
 
+  VerifyEmail:
+    handler: src/lambda/http/verifyEmail.handler
+    events:
+      - http:
+          method: post
+          path: videographers/{videographerId}/addSubscriber/{email}
+          cors: true
+          documentation:
+            summary: Verifies an email
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - ses:VerifyEmailAddress
+        Resource: '*'
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+
+  SendNewVideoNotificationEmail:
+    handler: src/lambda/dynamodb/newVideoNotification.handler
+    iamRoleStatementsName: newVideoNotificationRole
+    events:
+      - stream:
+          type: dynamodb
+          arn: !GetAtt VideosDynamoDBTable.StreamArn
+          maximumRetryAttempts: 4
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+      - Effect: Allow
+        Action: 
+          - ses:sendTemplatedEmail
+        Resource: '*'
+
 resources:
   Resources:
+    UpdateVideographerQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:provider.environment.UPDATE_VIDEOGRAPHER_QUEUE}
+
     GatewayResponseDefault4XX:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
@@ -496,6 +591,8 @@ resources:
             KeyType: HASH
           - AttributeName: id
             KeyType: RANGE
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.VIDEO_ID_INDEX}
             KeySchema:
@@ -503,8 +600,6 @@ resources:
               KeyType: HASH
             Projection: 
               ProjectionType: ALL
-        StreamSpecification: 
-          StreamViewType: NEW_IMAGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.VIDEOS_TABLE}
 

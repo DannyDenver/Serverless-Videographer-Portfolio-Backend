@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayEvent } from "aws-lambda";
 import { Videographer } from "../models/Videographer"
 import { getUserId, getJWT } from "../lambda/utils"
 import { VideographerAccess } from "../dataLayer/videographersAccess";
@@ -58,5 +58,11 @@ export async function updateVideographer(event: APIGatewayProxyEvent): Promise<V
     return await videographerAccess.updateVideographer(videographerId, updatedVideographer)
 }
 
+export async function addSubscriber(event: APIGatewayEvent): Promise<Videographer>  {
+    const videographerId = decodeURI(event.pathParameters.videographerId);
+    const email = event.pathParameters.email;
 
+    console.log(videographerId, email)
 
+    return await videographerAccess.addSubscriber(videographerId, email)
+}

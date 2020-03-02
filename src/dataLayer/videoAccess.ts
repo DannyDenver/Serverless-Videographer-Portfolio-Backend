@@ -56,7 +56,7 @@ export class VideoAccess {
     }).promise()
 
     return result.Attributes as Video;
-  }
+  }1
 
   async deleteVideo(videographerId: string, id: string) {
     return await this.docClient.delete({

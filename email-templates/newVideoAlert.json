@@ -1,0 +1,8 @@
+{
+    "Template": {
+        "TemplateName": "NewVideoAlert",
+        "SubjectPart": "{{name}} has uploaded a new video!",
+        "HtmlPart": "<h1>Hello subscriber,</h1><p> {{name}} has uploaded a new video.</p>",
+        "TextPart": "Dear subscriber,\r\n {{name}} has uploaded a new video."
+    }
+}
