@@ -1,8 +1,7 @@
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
-import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import { DocumentClient, ScanOutput, Key } from 'aws-sdk/clients/dynamodb'
 import { Video } from '../models/Video'
-import { getVideo } from '../businessLogic/video'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -16,7 +15,8 @@ export class VideoAccess {
     private readonly bucketName = process.env.VIDEOS_S3_BUCKET,
     private readonly urlExpiration = +process.env.SIGNED_URL_EXPIRATION,
     private readonly videoTable = process.env.VIDEOS_TABLE,
-    private readonly videoIdIndex = process.env.VIDEO_ID_INDEX) {
+    private readonly videoIdIndex = process.env.VIDEO_ID_INDEX,
+    private readonly videoTimestampIndex = process.env.VIDEO_TIMESTAMP_INDEX) {
   }
 
   generateUploadUrl(videoId: string): string {
@@ -32,6 +32,8 @@ export class VideoAccess {
   }
 
   async addVideo(video: Video) {
+    video.type = 'video';
+
     await this.docClient.put({
       TableName: this.videoTable,
       Item: video
@@ -72,7 +74,7 @@ export class VideoAccess {
     }).promise()
   }
 
-  async getVideos(videographerId: string): Promise<Video[]> {
+  async getVideographerVideos(videographerId: string): Promise<Video[]> {
     const result = await this.docClient.query({
       TableName: this.videoTable,
       KeyConditionExpression: 'videographerId = :videographerId',
@@ -82,6 +84,49 @@ export class VideoAccess {
     }).promise();
 
     return result.Items as Video[];
+  }
+
+  async getVideos(timestamp:string): Promise<[Video[], string]> {
+    console.log(timestamp);
+    let result;
+
+    if (timestamp) {
+      const key: Key = {
+        ["timestamp"]: { S:timestamp}
+      };  
+
+      result = await this.docClient.query({
+         TableName: this.videoTable,
+         IndexName: this.videoTimestampIndex,
+         ExclusiveStartKey: key,
+         ScanIndexForward: false, 
+         ExpressionAttributeNames: {
+          '#type': 'type'
+        },
+         KeyConditionExpression: '#type == :type',
+         ExpressionAttributeValues: {
+           ':type': 'video'
+         },
+        Limit: 10
+      }).promise();
+    }else {
+      result = await this.docClient.query({
+        TableName: this.videoTable,
+        IndexName: this.videoTimestampIndex,
+        ScanIndexForward: false, 
+        ExpressionAttributeNames: {
+          '#type': 'type'
+        },
+        KeyConditionExpression: '#type = :type',
+        ExpressionAttributeValues: {
+          ':type': 'video'
+        },
+        Limit: 3
+      }).promise(); 
+    }
+
+    console.log(result.Items as Video[]);
+    return [result.Items as Video[], result.LastEvaluatedKey];
   }
 
   async getVideo(videoId: string): Promise<Video> {

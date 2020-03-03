@@ -9,7 +9,7 @@ const XAWS = AWSXRay.captureAWS(AWS)
 export class VideographerAccess {
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
-    private readonly vidographersTable = process.env.VIDEOGRAPHERS_TABLE,
+    private readonly videographersTable = process.env.VIDEOGRAPHERS_TABLE,
     private readonly bucketName = process.env.PROFILE_PIC_S3_BUCKET) {
   }
 
@@ -17,7 +17,7 @@ export class VideographerAccess {
     const link = `https://${this.bucketName}.s3.amazonaws.com/${videographerId}`;
 
     await this.docClient.update({
-      TableName: this.vidographersTable,
+      TableName: this.videographersTable,
       Key: {
         id: videographerId,
       },
@@ -31,18 +31,21 @@ export class VideographerAccess {
   }
 
   async createVideographer(videographer: Videographer) {
-    await this.docClient.put({
-      TableName: this.vidographersTable,
+    const result = await this.docClient.put({
+      TableName: this.videographersTable,
       Item: videographer
     }).promise();
 
-    return videographer;
+    const newVideographer = result.Attributes as Videographer;
+    console.log(newVideographer);
+
+    return newVideographer;
   }
 
   async addSubscriber(videographerId: string, email: string) {
     console.log("trying to add subscriber");
     const result = await this.docClient.update({
-      TableName: this.vidographersTable,
+      TableName: this.videographersTable,
       Key: {
         id: videographerId,
       },
@@ -63,7 +66,7 @@ export class VideographerAccess {
 
   async updateVideographer(videographerId: string, updatedVideographer: UpdateVideographerRequest): Promise<Videographer> {
     const result = await this.docClient.update({
-      TableName: this.vidographersTable,
+      TableName: this.videographersTable,
       Key: {
         id: videographerId,
       },
@@ -90,7 +93,7 @@ export class VideographerAccess {
     console.log('Getting videographer', videographerId)
 
     const result = await this.docClient.get({
-      TableName: this.vidographersTable,
+      TableName: this.videographersTable,
       Key: {
         id: videographerId
       }
@@ -103,7 +106,7 @@ export class VideographerAccess {
 
   async getVideographers(): Promise<Videographer[]> {
     const result = await this.docClient.scan({
-      TableName: this.vidographersTable
+      TableName: this.videographersTable
     }).promise()
 
     return result.Items as Videographer[]
@@ -111,7 +114,7 @@ export class VideographerAccess {
 
   async videographerExists(videographerId: string): Promise<boolean> {
     const result = await this.docClient.get({
-      TableName: this.vidographersTable,
+      TableName: this.videographersTable,
       Key: {
         id: videographerId
       }

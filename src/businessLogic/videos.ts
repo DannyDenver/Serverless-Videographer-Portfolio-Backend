@@ -1,18 +1,25 @@
 import { VideoAccess } from "../dataLayer/videoAccess";
 import * as uuid from 'uuid'
 import { Video } from "../models/Video";
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayEvent } from "aws-lambda";
 import { getUserId } from "../lambda/utils"
 import { createLogger } from "../utils/logger";
 
 const videoAccess = new VideoAccess();
 const logger = createLogger('video')
 
-export async function getVideos(event: APIGatewayProxyEvent): Promise<Video[]> {
+export async function getVideos(event: APIGatewayEvent): Promise<[Video[], string]> {
+    console.log(event);
+    const timestamp = event.queryStringParameters && event.queryStringParameters.timestamp ? event.queryStringParameters.timestamp : null;
+
+    return await videoAccess.getVideos(timestamp);
+}
+
+export async function getVideographerVideos(event: APIGatewayProxyEvent): Promise<Video[]> {
     const videographerId = decodeURI(event.pathParameters.videographerId);
     logger.info(`Getting videos for videographer ${videographerId}.`)
 
-    return await videoAccess.getVideos(videographerId);
+    return await videoAccess.getVideographerVideos(videographerId);
 }
 
 export async function getVideo(event: APIGatewayProxyEvent): Promise<Video> {

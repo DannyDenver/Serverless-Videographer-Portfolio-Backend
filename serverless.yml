@@ -39,6 +39,7 @@ provider:
     CONNECTIONS_TABLE: Connections-videographer-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
     VIDEO_ID_INDEX: VideoIdIndex
+    VIDEO_TIMESTAMP_INDEX: VideoTimeIndex
     UPDATE_VIDEOGRAPHER_QUEUE: Update-videographer-queue-${self:provider.stage}
 
 custom:
@@ -107,12 +108,30 @@ functions:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
   
+  AddVideographer:
+    handler: src/lambda/http/addVideographer.handler
+    events: 
+      - http: 
+          method: post
+          path: videographers
+          cors: true
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+  
   UpdateVideographer:
     handler: src/lambda/http/updateVideographer.handler
     events: 
       - http: 
           method: patch
-          path: videographers/
+          path: videographers
           cors: true
           authorizer: Auth
     iamRoleStatements:
@@ -170,6 +189,25 @@ functions:
 
   GetVideos:
     handler: src/lambda/http/getVideos.handler
+    events:
+      - http:
+          method: get
+          path: videos
+          cors: true
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:Scan
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/${self:provider.environment.VIDEO_TIMESTAMP_INDEX}
+
+  GetVideographerVideos:
+    handler: src/lambda/http/getVideographerVideos.handler
+    iamRoleStatementsName: GetUserVideosRole
     events:
       - http:
           method: get
@@ -586,6 +624,10 @@ resources:
             AttributeType: S
           - AttributeName: id
             AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+          - AttributeName: type
+            AttributeType: S
         KeySchema:
           - AttributeName: videographerId
             KeyType: HASH
@@ -600,6 +642,15 @@ resources:
               KeyType: HASH
             Projection: 
               ProjectionType: ALL
+          - IndexName: ${self:provider.environment.VIDEO_TIMESTAMP_INDEX}
+            KeySchema:
+            - AttributeName: type
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+            Projection: 
+              ProjectionType: ALL
+
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.VIDEOS_TABLE}
 

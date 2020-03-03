@@ -1,8 +1,8 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayEvent } from "aws-lambda";
-import { getVideo } from "../../businessLogic/videos";
+import { getVideographerVideos } from "../../businessLogic/videos";
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
-    const video = await getVideo(event);
+    const videos = await getVideographerVideos(event);
 
     return {
         statusCode: 200,
@@ -10,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent): P
           'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify({
-          video: video
+          videos: videos
         })
     }
 }
