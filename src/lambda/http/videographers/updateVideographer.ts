@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayProxyEvent } from "aws-lambda";
-import { updateVideographer } from "../../businessLogic/videographers";
+import { updateVideographer } from "../../../businessLogic/videographers";
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {

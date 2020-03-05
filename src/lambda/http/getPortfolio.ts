@@ -1,16 +1,16 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayProxyEvent } from "aws-lambda";
-import { addVideo } from "../../businessLogic/videos";
+import { getPortfolio } from "../../businessLogic/portfolio";
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    const uploadUrl = await addVideo(event);
+  const portfolio = await getPortfolio(event);
 
     return {
-        statusCode: 201,
+        statusCode: 200,
         headers: {
           'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify({
-          uploadUrl
+          ...portfolio
         })
     }
 }

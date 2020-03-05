@@ -36,6 +36,9 @@ provider:
     EMAIL_SUBSCRIBER_TABLE: Subscribers-${self:provider.stage}
     VIDEOS_S3_BUCKET: serverless-videogapher-videos-bucket-${self:provider.stage}
     PROFILE_PIC_S3_BUCKET: serverless-videographer-profile-pic-bucket-${self:provider.stage}
+    APP_DB_TABLE: reel-people-table-${self:provider.stage}
+    TIMESTAMP_INDEX: TimestampIndex
+
     CONNECTIONS_TABLE: Connections-videographer-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
     VIDEO_ID_INDEX: VideoIdIndex
@@ -71,7 +74,7 @@ functions:
     handler: src/lambda/auth/auth0Authorizer.handler
 
   GetVideographers:
-    handler: src/lambda/http/getVideographers.handler
+    handler: src/lambda/http/videographers/getVideographers.handler
     events: 
       - http: 
           method: get
@@ -90,7 +93,7 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
   
   GetVideographer:
-    handler: src/lambda/http/getVideographer.handler
+    handler: src/lambda/http/videographers/getVideographer.handler
     events: 
       - http: 
           method: get
@@ -109,14 +112,14 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
   
   AddVideographer:
-    handler: src/lambda/http/addVideographer.handler
+    handler: src/lambda/http/videographers/addVideographer.handler
     events: 
       - http: 
           method: post
           path: videographers
           cors: true
     iamRoleStatements:
-      - Effect: "Allow" 
+      - Effect: "Allow"
         Action:
         - "xray:PutTraceSegments"
         Resource: "*"
@@ -124,10 +127,10 @@ functions:
         Action:
           - dynamodb:PutItem
           - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
   
   UpdateVideographer:
-    handler: src/lambda/http/updateVideographer.handler
+    handler: src/lambda/http/videographers/updateVideographer.handler
     events: 
       - http: 
           method: patch
@@ -145,7 +148,7 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
 
   AddProfilePicture:
-    handler: src/lambda/http/addProfilePicture.handler
+    handler: src/lambda/http/videographers/addProfilePicture.handler
     events:
       - http:
           method: post
@@ -157,7 +160,7 @@ functions:
         Action:
           - dynamodb:UpdateItem
           - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
       - Effect: Allow
         Action:
           - s3:PutObject
@@ -168,7 +171,7 @@ functions:
         Resource: "*"    
 
   GetVideo:
-    handler: src/lambda/http/getVideo.handler
+    handler: src/lambda/http/videos/getVideo.handler
     events:
       - http:
           method: get
@@ -188,7 +191,7 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/${self:provider.environment.VIDEO_ID_INDEX}
 
   GetVideos:
-    handler: src/lambda/http/getVideos.handler
+    handler: src/lambda/http/videos/getVideos.handler
     events:
       - http:
           method: get
@@ -206,7 +209,7 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/${self:provider.environment.VIDEO_TIMESTAMP_INDEX}
 
   GetVideographerVideos:
-    handler: src/lambda/http/getVideographerVideos.handler
+    handler: src/lambda/http/videos/getVideographerVideos.handler
     iamRoleStatementsName: GetUserVideosRole
     events:
       - http:
@@ -226,6 +229,24 @@ functions:
         Action:
           - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+
+  GetPortfolio:
+    handler: src/lambda/http/getPortfolio.handler
+    events:
+      - http:
+          method: get
+          path: portfolio/{videographerId}
+          cors: true
+    iamRoleStatements:
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
         
   UpdateVideographerQueue:
     handler: src/lambda/http/updateVideographerQueue.handler
@@ -264,7 +285,7 @@ functions:
         Resource: "*"
 
   AddVideo: 
-    handler: src/lambda/http/addVideo.handler
+    handler: src/lambda/http/videos/addVideo.handler
     events:
       - http:
           method: post
@@ -289,7 +310,7 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
   
   EditVideo: 
-    handler: src/lambda/http/editVideo.handler
+    handler: src/lambda/http/videos/editVideo.handler
     events:
       - http:
           method: patch
@@ -314,7 +335,7 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
 
   DeleteVideo: 
-    handler: src/lambda/http/deleteVideo.handler
+    handler: src/lambda/http/videos/deleteVideo.handler
     events:
       - http:
           method: delete
@@ -616,6 +637,31 @@ resources:
         DisplayName: Videos topic
         TopicName: ${self:custom.topicName}
 
+    AppDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.TIMESTAMP_INDEX}
+            KeySchema:
+            - AttributeName: timestamp
+              KeyType: HASH
+            Projection: 
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.APP_DB_TABLE}
+
     VideosDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -650,7 +696,6 @@ resources:
               KeyType: RANGE
             Projection: 
               ProjectionType: ALL
-
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.VIDEOS_TABLE}
 

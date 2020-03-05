@@ -1,6 +1,6 @@
 import 'source-map-support/register'
 import { APIGatewayProxyResult, APIGatewayProxyHandler, APIGatewayEvent } from 'aws-lambda'
-import { addProfilePicture } from '../../businessLogic/images'
+import { addProfilePicture } from '../../../businessLogic/images'
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
   const uploadUrl = await addProfilePicture(event)

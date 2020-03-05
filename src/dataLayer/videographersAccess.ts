@@ -1,8 +1,8 @@
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
-import { Videographer } from '../models/Videographer'
-import { UpdateVideographerRequest } from '../requests/UpdateVideographerRequest'
+import { VideographerDb } from '../models/VideographerDb';
+import { NewVideographerRequest } from '../requests/NewVideographerRequest';
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -10,33 +10,36 @@ export class VideographerAccess {
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
     private readonly videographersTable = process.env.VIDEOGRAPHERS_TABLE,
-    private readonly bucketName = process.env.PROFILE_PIC_S3_BUCKET) {
+    private readonly bucketName = process.env.PROFILE_PIC_S3_BUCKET,
+    private readonly appTable = process.env.APP_DB_TABLE) {
   }
 
   async addProfilePicture(videographerId: string) {
     const link = `https://${this.bucketName}.s3.amazonaws.com/${videographerId}`;
 
+    const primaryKey = 'USER#' + videographerId;
+    const sortKey = 'PROFILE#' + videographerId;
+
     await this.docClient.update({
-      TableName: this.videographersTable,
+      TableName: this.appTable,
       Key: {
-        id: videographerId,
+        PK: primaryKey,
+        SK: sortKey
       },
-      ConditionExpression: 'id = :videographerId',
-      UpdateExpression: 'set pictureUrl = :pictureUrl',
+      UpdateExpression: 'set profilePic = :pictureUrl',
       ExpressionAttributeValues: {
         ':pictureUrl': link,
-        ':videographerId': videographerId
       },
     }).promise();
   }
 
-  async createVideographer(videographer: Videographer) {
+  async createVideographer(videographer: VideographerDb): Promise<VideographerDb> {
     const result = await this.docClient.put({
-      TableName: this.videographersTable,
+      TableName: this.appTable,
       Item: videographer
     }).promise();
 
-    const newVideographer = result.Attributes as Videographer;
+    const newVideographer = result.Attributes as VideographerDb;
     console.log(newVideographer);
 
     return newVideographer;
@@ -62,9 +65,9 @@ export class VideographerAccess {
       ReturnValues: 'ALL_NEW'
     }).promise();
 
-    return result.Attributes as Videographer;  }
+    return result.Attributes as VideographerDb;  }
 
-  async updateVideographer(videographerId: string, updatedVideographer: UpdateVideographerRequest): Promise<Videographer> {
+  async updateVideographer(videographerId: string, updatedVideographer: NewVideographerRequest): Promise<VideographerDb> {
     const result = await this.docClient.update({
       TableName: this.videographersTable,
       Key: {
@@ -96,7 +99,8 @@ export class VideographerAccess {
       TableName: this.videographersTable,
       Key: {
         id: videographerId
-      }
+      },
+
     }).promise()
 
     console.log(result)
@@ -113,10 +117,14 @@ export class VideographerAccess {
   }
 
   async videographerExists(videographerId: string): Promise<boolean> {
+    const key = "User#" + videographerId;
+    const sortKey = "PROFILE#" + videographerId;
+
     const result = await this.docClient.get({
-      TableName: this.videographersTable,
+      TableName: this.appTable,
       Key: {
-        id: videographerId
+        PK: key,
+        SK: sortKey
       }
     }).promise()
 

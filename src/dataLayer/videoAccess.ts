@@ -1,7 +1,7 @@
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
-import { DocumentClient, ScanOutput, Key } from 'aws-sdk/clients/dynamodb'
-import { Video } from '../models/Video'
+import { DocumentClient, Key } from 'aws-sdk/clients/dynamodb'
+import { VideoDb } from '../models/VideoDb'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -31,34 +31,32 @@ export class VideoAccess {
     return `https://${this.bucketName}.s3.amazonaws.com/${videoId}`
   }
 
-  async addVideo(video: Video) {
-    video.type = 'video';
-
+  async addVideo(video: VideoDb) {
     await this.docClient.put({
       TableName: this.videoTable,
       Item: video
     }).promise()
   }
 
-  async editVideo(video: Video, videoId: string): Promise<Video> {
-    const result = await this.docClient.update({
-      TableName: this.videoTable,
-      Key: {
-        videographerId: video.videographerId,
-        id: videoId
-      },
-      ConditionExpression: 'id = :id',
-      UpdateExpression: 'set title = :title, description = :description',
-      ExpressionAttributeValues: {
-        ':title': video.title,
-        ':description': video.description,
-        ':id': video.id
-      },
-      ReturnValues: 'ALL_NEW'
-    }).promise()
+  // async editVideo(video: VideoDb, videoId: string): Promise<VideoDb> {
+  //   const result = await this.docClient.update({
+  //     TableName: this.videoTable,
+  //     Key: {
+  //       videographerId: video.videographerId,
+  //       id: videoId
+  //     },
+  //     ConditionExpression: 'id = :id',
+  //     UpdateExpression: 'set title = :title, description = :description',
+  //     ExpressionAttributeValues: {
+  //       ':title': video.title,
+  //       ':description': video.description,
+  //       ':id': video.id
+  //     },
+  //     ReturnValues: 'ALL_NEW'
+  //   }).promise()
 
-    return result.Attributes as Video;
-  }1
+  //   return result.Attributes as VideoDb;
+  // }
 
   async deleteVideo(videographerId: string, id: string) {
     return await this.docClient.delete({
@@ -74,7 +72,7 @@ export class VideoAccess {
     }).promise()
   }
 
-  async getVideographerVideos(videographerId: string): Promise<Video[]> {
+  async getVideographerVideos(videographerId: string): Promise<VideoDb[]> {
     const result = await this.docClient.query({
       TableName: this.videoTable,
       KeyConditionExpression: 'videographerId = :videographerId',
@@ -83,10 +81,10 @@ export class VideoAccess {
       }
     }).promise();
 
-    return result.Items as Video[];
+    return result.Items as VideoDb[];
   }
 
-  async getVideos(timestamp:string): Promise<[Video[], string]> {
+  async getVideos(timestamp:string): Promise<[VideoDb[], string]> {
     console.log(timestamp);
     let result;
 
@@ -121,15 +119,15 @@ export class VideoAccess {
         ExpressionAttributeValues: {
           ':type': 'video'
         },
-        Limit: 3
+        Limit: 10
       }).promise(); 
     }
 
-    console.log(result.Items as Video[]);
-    return [result.Items as Video[], result.LastEvaluatedKey];
+    console.log(result.Items as VideoDb[]);
+    return [result.Items as VideoDb[], result.LastEvaluatedKey];
   }
 
-  async getVideo(videoId: string): Promise<Video> {
+  async getVideo(videoId: string): Promise<VideoDb> {
     const result = await this.docClient.query({
       TableName: this.videoTable,
       IndexName: this.videoIdIndex,
@@ -139,7 +137,7 @@ export class VideoAccess {
       }
     }).promise();
   
-    return result.Items[0] as Video;
+    return result.Items[0] as VideoDb;
   }
 }
 

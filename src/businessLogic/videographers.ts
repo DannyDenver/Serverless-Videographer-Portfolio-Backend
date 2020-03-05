@@ -2,15 +2,16 @@ import { APIGatewayProxyEvent, APIGatewayEvent } from "aws-lambda";
 import { Videographer } from "../models/Videographer"
 import { getUserId, getJWT } from "../lambda/utils"
 import { VideographerAccess } from "../dataLayer/videographersAccess";
-import { UpdateVideographerRequest } from "../requests/UpdateVideographerRequest";
+import { NewVideographerRequest } from "../requests/NewVideographerRequest";
 import { createLogger } from "../utils/logger";
 import { parseUserId } from "../auth/utils";
+import { VideographerDb } from "../models/VideographerDb";
 
 const videographerAccess = new VideographerAccess()
 
 const logger = createLogger('videographer');
 
-export async function addVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
+export async function addVideographer(event: APIGatewayProxyEvent): Promise<VideographerDb> {
     const token = getJWT(event)
 
     if (token) {
@@ -24,13 +25,27 @@ export async function addVideographer(event: APIGatewayProxyEvent): Promise<Vide
                 videographerId = videographerId.split("|")[1];
             }
 
-            const newVideographer: UpdateVideographerRequest = JSON.parse(event.body)
-            newVideographer.id = videographerId;
+            console.log(videographerId)
 
-            logger.info(`Creating videographer.`, newVideographer);
+            const newVideographer: NewVideographerRequest = JSON.parse(event.body);
+            const partitionKey = "USER#" + videographerId;
+            const sortKey = "PROFILE#" + videographerId;
 
-            return await videographerAccess.createVideographer(newVideographer);
-        }        
+            const videographerDb: VideographerDb = {
+                PK: partitionKey,
+                SK: sortKey,
+                firstName: newVideographer.firstName,
+                lastName: newVideographer.lastName,
+                location: newVideographer.location || null,
+                bio: newVideographer.bio || null,
+                profilePic: newVideographer.pictureUrl || null,
+                coverPhoto: newVideographer.coverPhoto || null,
+            };
+            
+            console.log('creating new videographer', videographerDb);
+
+            return await videographerAccess.createVideographer(videographerDb);
+        }
     }
 }
 
@@ -57,7 +72,7 @@ export async function getVideographer(event: APIGatewayProxyEvent): Promise<Vide
 
 export async function updateVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
     const videographerId = getUserId(event)
-    const updatedVideographer: UpdateVideographerRequest = JSON.parse(event.body)
+    const updatedVideographer: NewVideographerRequest = JSON.parse(event.body)
 
     if (videographerId !== updatedVideographer.id) {
         logger.info(`Forbidden update attempt from videographer ${videographerId}`, updatedVideographer)
