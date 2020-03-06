@@ -6,4 +6,5 @@ export class Videographer {
     bio?: string;
     profilePic?: string;
     email?: string
+    coverPhoto?: string
 }

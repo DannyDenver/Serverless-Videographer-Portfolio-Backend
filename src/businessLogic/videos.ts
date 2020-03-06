@@ -9,7 +9,7 @@ import { Video } from "../models/Video";
 const videoAccess = new VideoAccess();
 const logger = createLogger('video')
 
-export async function getVideos(event: APIGatewayEvent): Promise<[VideoDb[], string]> {
+export async function getVideos(event: APIGatewayEvent): Promise<[Video[], string]> {
     console.log(event);
     const timestamp = event.queryStringParameters && event.queryStringParameters.timestamp ? event.queryStringParameters.timestamp : null;
 

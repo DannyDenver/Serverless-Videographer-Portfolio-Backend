@@ -2,6 +2,8 @@ import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient, Key } from 'aws-sdk/clients/dynamodb'
 import { VideoDb } from '../models/VideoDb'
+import { videosDBtoEntity } from '../utils/DboToEntityMapper'
+import { Video } from '../models/Video'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -16,7 +18,8 @@ export class VideoAccess {
     private readonly urlExpiration = +process.env.SIGNED_URL_EXPIRATION,
     private readonly videoTable = process.env.VIDEOS_TABLE,
     private readonly videoIdIndex = process.env.VIDEO_ID_INDEX,
-    private readonly videoTimestampIndex = process.env.VIDEO_TIMESTAMP_INDEX) {
+    private readonly appTable = process.env.APP_DB_TABLE,
+    private readonly timestampIndex = process.env.TIMESTAMP_INDEX) {
   }
 
   generateUploadUrl(videoId: string): string {
@@ -84,47 +87,54 @@ export class VideoAccess {
     return result.Items as VideoDb[];
   }
 
-  async getVideos(timestamp:string): Promise<[VideoDb[], string]> {
+  async getVideos(timestamp:string): Promise<[Video[], string]> {
     console.log(timestamp);
     let result;
 
-    if (timestamp) {
-      const key: Key = {
-        ["timestamp"]: { S:timestamp}
-      };  
+    // if (timestamp) {
+    //   const key: Key = {
+    //     ["timestamp"]: { S:timestamp}
+    //   };  
 
-      result = await this.docClient.query({
-         TableName: this.videoTable,
-         IndexName: this.videoTimestampIndex,
-         ExclusiveStartKey: key,
-         ScanIndexForward: false, 
-         ExpressionAttributeNames: {
-          '#type': 'type'
-        },
-         KeyConditionExpression: '#type == :type',
-         ExpressionAttributeValues: {
-           ':type': 'video'
-         },
-        Limit: 10
+    //   result = await this.docClient.query({
+    //      TableName: this.videoTable,
+    //      IndexName: this.videoTimestampIndex,
+    //      ExclusiveStartKey: key,
+    //      ScanIndexForward: false, 
+    //      ExpressionAttributeNames: {
+    //       '#type': 'type'
+    //     },
+    //      KeyConditionExpression: '#type == :type',
+    //      ExpressionAttributeValues: {
+    //        ':type': 'video'
+    //      },
+    //     Limit: 10
+    //   }).promise();
+    // }else {
+    //   result = await this.docClient.query({
+    //     TableName: this.videoTable,
+    //     IndexName: this.videoTimestampIndex,
+    //     ScanIndexForward: false, 
+    //     ExpressionAttributeNames: {
+    //       '#type': 'type'
+    //     },
+    //     KeyConditionExpression: '#type = :type',
+    //     ExpressionAttributeValues: {
+    //       ':type': 'video'
+    //     },
+    //     Limit: 10
+    //   }).promise(); 
+    // }
+
+
+    result = await this.docClient.scan({
+        TableName: this.appTable,
+        IndexName: this.timestampIndex,
+        Limit: 3
       }).promise();
-    }else {
-      result = await this.docClient.query({
-        TableName: this.videoTable,
-        IndexName: this.videoTimestampIndex,
-        ScanIndexForward: false, 
-        ExpressionAttributeNames: {
-          '#type': 'type'
-        },
-        KeyConditionExpression: '#type = :type',
-        ExpressionAttributeValues: {
-          ':type': 'video'
-        },
-        Limit: 10
-      }).promise(); 
-    }
 
-    console.log(result.Items as VideoDb[]);
-    return [result.Items as VideoDb[], result.LastEvaluatedKey];
+    
+    return [videosDBtoEntity(result.Items), result.LastEvaluatedKey];
   }
 
   async getVideo(videoId: string): Promise<VideoDb> {

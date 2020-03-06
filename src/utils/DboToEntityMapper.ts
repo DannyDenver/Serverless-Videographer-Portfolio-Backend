@@ -10,7 +10,8 @@ export function videographerDBtoEntity(videographerDb: VideographerDb): Videogra
         lastName: videographerDb.lastName,
         bio: videographerDb.bio,
         profilePic: videographerDb.profilePic,
-        location: videographerDb.location
+        location: videographerDb.location,
+        coverPhoto: videographerDb.coverPhoto
     }
 }
 
@@ -20,11 +21,15 @@ export function videosDBtoEntity(videoDbs: VideoDb[]): Video[] {
 
 export function videoDBtoEntity(videoDb: VideoDb): Video {
     return {
-        description: videoDb.description,
         id: videoDb.SK.replace("VIDEO#", ''),
-        timestamp: videoDb.timestamp,
-        title: videoDb.title,
+        videographerId: videoDb.PK.replace("USER#", ''),
         url: videoDb.url,
-        videographerId: videoDb.PK.replace("USER#", '')
+        title: videoDb.title,
+        description: videoDb.description,
+        timestamp: videoDb.timestamp,
+        profilePic: videoDb.profilePic,
+        firstName: videoDb.firstName,
+        lastName: videoDb.lastName,
+        genre: videoDb.genre
     }
 }

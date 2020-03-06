@@ -5,4 +5,8 @@ export class Video {
     title: string;
     description: string;
     timestamp: string;
+    profilePic: string;
+    firstName: string;
+    lastName: string;
+    genre: string;
 }
