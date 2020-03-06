@@ -50,6 +50,10 @@ export async function addVideographer(event: APIGatewayProxyEvent): Promise<Vide
 }
 
 export async function getVideographers(event: APIGatewayProxyEvent): Promise<Videographer[]> {
+    logger.info('Getting all videographers');
+
+    const videographers = await videographerAccess.getVideographers();
+
     const token = getJWT(event);
     let videographerId;
 
@@ -57,10 +61,6 @@ export async function getVideographers(event: APIGatewayProxyEvent): Promise<Vid
         let auth0Id = parseUserId(token);
         videographerId = auth0Id.includes("|") ? auth0Id.split("|")[1] : auth0Id;   
     }
-
-    logger.info('Getting all videographers');
-
-    const videographers = await videographerAccess.getVideographers();
 
     return videographers.filter(videographer => videographer.id !==  videographerId && videographer.firstName && videographer.lastName);
 }

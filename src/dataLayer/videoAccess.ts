@@ -19,7 +19,8 @@ export class VideoAccess {
     private readonly videoTable = process.env.VIDEOS_TABLE,
     private readonly videoIdIndex = process.env.VIDEO_ID_INDEX,
     private readonly appTable = process.env.APP_DB_TABLE,
-    private readonly timestampIndex = process.env.TIMESTAMP_INDEX) {
+    private readonly timestampIndex = process.env.TIMESTAMP_INDEX,
+    private readonly mediaTypeIndex = process.env.MEDIA_TYPE_INDEX) {
   }
 
   generateUploadUrl(videoId: string): string {
@@ -89,52 +90,13 @@ export class VideoAccess {
 
   async getVideos(timestamp:string): Promise<[Video[], string]> {
     console.log(timestamp);
-    let result;
-
-    // if (timestamp) {
-    //   const key: Key = {
-    //     ["timestamp"]: { S:timestamp}
-    //   };  
-
-    //   result = await this.docClient.query({
-    //      TableName: this.videoTable,
-    //      IndexName: this.videoTimestampIndex,
-    //      ExclusiveStartKey: key,
-    //      ScanIndexForward: false, 
-    //      ExpressionAttributeNames: {
-    //       '#type': 'type'
-    //     },
-    //      KeyConditionExpression: '#type == :type',
-    //      ExpressionAttributeValues: {
-    //        ':type': 'video'
-    //      },
-    //     Limit: 10
-    //   }).promise();
-    // }else {
-    //   result = await this.docClient.query({
-    //     TableName: this.videoTable,
-    //     IndexName: this.videoTimestampIndex,
-    //     ScanIndexForward: false, 
-    //     ExpressionAttributeNames: {
-    //       '#type': 'type'
-    //     },
-    //     KeyConditionExpression: '#type = :type',
-    //     ExpressionAttributeValues: {
-    //       ':type': 'video'
-    //     },
-    //     Limit: 10
-    //   }).promise(); 
-    // }
-
-
-    result = await this.docClient.scan({
+    const result = await this.docClient.scan({
         TableName: this.appTable,
-        IndexName: this.timestampIndex,
-        Limit: 3
+        IndexName: this.mediaTypeIndex,
+        Limit: 10
       }).promise();
-
     
-    return [videosDBtoEntity(result.Items), result.LastEvaluatedKey];
+    return [videosDBtoEntity(result.Items as VideoDb[]), result.LastEvaluatedKey.toString()];
   }
 
   async getVideo(videoId: string): Promise<VideoDb> {

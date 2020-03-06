@@ -5,7 +5,7 @@ import { Video } from "../models/Video";
 
 export function videographerDBtoEntity(videographerDb: VideographerDb): Videographer {
     return {
-        id: videographerDb.SK.replace("USER#", ''),
+        id: videographerDb.PK.replace("USER#", ''),
         firstName: videographerDb.firstName,
         lastName: videographerDb.lastName,
         bio: videographerDb.bio,
@@ -13,6 +13,16 @@ export function videographerDBtoEntity(videographerDb: VideographerDb): Videogra
         location: videographerDb.location,
         coverPhoto: videographerDb.coverPhoto
     }
+}
+
+export function videographersDBtoShortEntity(videographerDb: VideographerDb): Videographer {
+    return {
+        id: videographerDb.PK.replace("USER#", ''),
+        firstName: videographerDb.firstName,
+        lastName: videographerDb.lastName,
+        profilePic: videographerDb.profilePic,
+        location: videographerDb.location
+        }
 }
 
 export function videosDBtoEntity(videoDbs: VideoDb[]): Video[] {

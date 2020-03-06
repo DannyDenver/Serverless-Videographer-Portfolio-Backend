@@ -3,6 +3,8 @@ import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { VideographerDb } from '../models/VideographerDb';
 import { NewVideographerRequest } from '../requests/NewVideographerRequest';
+import { Videographer } from '../models/Videographer';
+import { videographersDBtoShortEntity } from '../utils/DboToEntityMapper';
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -110,10 +112,21 @@ export class VideographerAccess {
 
   async getVideographers(): Promise<Videographer[]> {
     const result = await this.docClient.scan({
-      TableName: this.videographersTable
-    }).promise()
+      TableName: this.appTable,
+      ProjectionExpression: "SK, firstName, lastName, profilePic, PK, #loc",
+      FilterExpression: 'begins_with(SK, :PROFILE)',
+      ExpressionAttributeNames: {
+        '#loc': 'location',
+      },
+      ExpressionAttributeValues: {
+        ':PROFILE': 'PROFILE#'
+      },
+      Limit: 8
+    }).promise();
+    
+    console.log(result);
 
-    return result.Items as Videographer[]
+    return result.Items.map((videographer: VideographerDb) => videographersDBtoShortEntity(videographer))
   }
 
   async videographerExists(videographerId: string): Promise<boolean> {
