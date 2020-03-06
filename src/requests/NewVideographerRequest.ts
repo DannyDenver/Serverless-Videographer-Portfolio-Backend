@@ -4,7 +4,7 @@ export interface NewVideographerRequest {
     lastName: string
     location: string
     bio: string
-    pictureUrl: string
+    profilePic: string
     coverPhoto: string
     
 }

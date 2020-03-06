@@ -11,46 +11,25 @@ const videographerAccess = new VideographerAccess()
 
 const logger = createLogger('videographer');
 
-export async function addVideographer(event: APIGatewayProxyEvent): Promise<VideographerDb> {
-    const token = getJWT(event)
+export async function addVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
+    const userId = getUserId(event)
 
-    if (token) {
-        let auth0Id = parseUserId(token);
-        let videographerId = auth0Id.includes("|") ? auth0Id.split("|")[1] : auth0Id;
-        const videographerExists = await videographerAccess.videographerExists(videographerId)
+    if (userId) {
+        const videographerExists = await videographerAccess.videographerExists(userId)
         
-
         if (!videographerExists) {
-            if (videographerId.includes("|")){
-                videographerId = videographerId.split("|")[1];
-            }
+            console.log(userId)
 
-            console.log(videographerId)
-
-            const newVideographer: NewVideographerRequest = JSON.parse(event.body);
-            const partitionKey = "USER#" + videographerId;
-            const sortKey = "PROFILE#" + videographerId;
-
-            const videographerDb: VideographerDb = {
-                PK: partitionKey,
-                SK: sortKey,
-                firstName: newVideographer.firstName,
-                lastName: newVideographer.lastName,
-                location: newVideographer.location || null,
-                bio: newVideographer.bio || null,
-                profilePic: newVideographer.pictureUrl || null,
-                coverPhoto: newVideographer.coverPhoto || null,
-            };
+            const newVideographer: Videographer = JSON.parse(event.body);
             
-            console.log('creating new videographer', videographerDb);
-
-            return await videographerAccess.createVideographer(videographerDb);
+            console.log('creating new videographer', newVideographer);
+            return await videographerAccess.createVideographer(userId, newVideographer);
         }
     }
 }
 
 export async function getVideographers(event: APIGatewayProxyEvent): Promise<Videographer[]> {
-    logger.info('Getting all videographers');
+    logger.info('Getting videographers');
 
     const videographers = await videographerAccess.getVideographers();
 
@@ -72,11 +51,10 @@ export async function getVideographer(event: APIGatewayProxyEvent): Promise<Vide
 
 export async function updateVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
     const videographerId = getUserId(event)
-    const updatedVideographer: NewVideographerRequest = JSON.parse(event.body)
+    const updatedVideographer: Videographer = JSON.parse(event.body)
 
     if (videographerId !== updatedVideographer.id) {
         logger.info(`Forbidden update attempt from videographer ${videographerId}`, updatedVideographer)
-
         throw new Error('Cannot edit other profiles')
     }
 

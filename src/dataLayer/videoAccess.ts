@@ -4,6 +4,7 @@ import { DocumentClient, Key } from 'aws-sdk/clients/dynamodb'
 import { VideoDb } from '../models/VideoDb'
 import { videosDBtoEntity } from '../utils/DboToEntityMapper'
 import { Video } from '../models/Video'
+import { videoToVideoDb } from '../utils/EntityToDboMapper'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -35,10 +36,12 @@ export class VideoAccess {
     return `https://${this.bucketName}.s3.amazonaws.com/${videoId}`
   }
 
-  async addVideo(video: VideoDb) {
+  async addVideo(video: Video) {
+    const videoDb: VideoDb = videoToVideoDb(video);
+
     await this.docClient.put({
       TableName: this.videoTable,
-      Item: video
+      Item: videoDb
     }).promise()
   }
 
@@ -95,8 +98,10 @@ export class VideoAccess {
         IndexName: this.mediaTypeIndex,
         Limit: 10
       }).promise();
+
+    const lastKey = result.LastEvaluatedKey ? result.LastEvaluatedKey.toString() : null;
     
-    return [videosDBtoEntity(result.Items as VideoDb[]), result.LastEvaluatedKey.toString()];
+    return [videosDBtoEntity(result.Items as VideoDb[]), lastKey];
   }
 
   async getVideo(videoId: string): Promise<VideoDb> {

@@ -59,8 +59,8 @@ export async function addVideo(event: APIGatewayProxyEvent): Promise<string> {
     video.timestamp = new Date().toISOString();
     video.url = videoAccess.getVideoUrl(videoId);
 
-    //await videoAccess.addVideo(video);
-
+    await videoAccess.addVideo(video);
+    
     return uploadUrl;
 }
 

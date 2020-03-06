@@ -2,9 +2,8 @@ import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { VideographerDb } from '../models/VideographerDb';
-import { NewVideographerRequest } from '../requests/NewVideographerRequest';
 import { Videographer } from '../models/Videographer';
-import { videographersDBtoShortEntity } from '../utils/DboToEntityMapper';
+import { videographersDBtoShortEntity, videographerDBtoEntity } from '../utils/DboToEntityMapper';
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -35,16 +34,30 @@ export class VideographerAccess {
     }).promise();
   }
 
-  async createVideographer(videographer: VideographerDb): Promise<VideographerDb> {
+  async createVideographer(userId, newVideographer: Videographer): Promise<Videographer> {
+    const partitionKey = "USER#" + userId;
+    const sortKey = "PROFILE#" + userId;
+
+    const newVideographerDb: VideographerDb = {
+      PK: partitionKey,
+      SK: sortKey,
+      firstName: newVideographer.firstName,
+      lastName: newVideographer.lastName,
+      location: newVideographer.location || null,
+      bio: newVideographer.bio || null,
+      profilePic: newVideographer.profilePic || null,
+      coverPhoto: newVideographer.coverPhoto || null,
+    };
+
     const result = await this.docClient.put({
       TableName: this.appTable,
-      Item: videographer
+      Item: newVideographerDb
     }).promise();
 
-    const newVideographer = result.Attributes as VideographerDb;
+    const createdVideographerDb = result.Attributes as VideographerDb;
     console.log(newVideographer);
 
-    return newVideographer;
+    return videographerDBtoEntity(createdVideographerDb);
   }
 
   async addSubscriber(videographerId: string, email: string) {
@@ -67,16 +80,17 @@ export class VideographerAccess {
       ReturnValues: 'ALL_NEW'
     }).promise();
 
-    return result.Attributes as VideographerDb;  }
+    return result.Attributes as VideographerDb;
+  }
 
-  async updateVideographer(videographerId: string, updatedVideographer: NewVideographerRequest): Promise<VideographerDb> {
+  async updateVideographer(videographerId: string, updatedVideographer: Videographer): Promise<Videographer> {
     const result = await this.docClient.update({
       TableName: this.videographersTable,
       Key: {
         id: videographerId,
       },
       ConditionExpression: 'id = :videographerId',
-      UpdateExpression: 'set firstName = :firstame, lastName = :lastName, #loc = :location, bio = :bio, email = :email',
+      UpdateExpression: 'set firstName = :firstame, lastName = :lastName, #loc = :location, bio = :bio',
       ExpressionAttributeNames: {
         '#loc': 'location'
       },
@@ -86,12 +100,11 @@ export class VideographerAccess {
         ':lastName': updatedVideographer.lastName,
         ':location': updatedVideographer.location,
         ':bio': updatedVideographer.bio,
-        ':email': updatedVideographer.email
       },
       ReturnValues: 'ALL_NEW'
     }).promise();
 
-    return result.Attributes as Videographer;
+    return videographerDBtoEntity(result.Attributes as VideographerDb);
   }
 
   async getVideographer(videographerId: string): Promise<Videographer> {
@@ -123,14 +136,14 @@ export class VideographerAccess {
       },
       Limit: 8
     }).promise();
-    
+
     console.log(result);
 
     return result.Items.map((videographer: VideographerDb) => videographersDBtoShortEntity(videographer))
   }
 
   async videographerExists(videographerId: string): Promise<boolean> {
-    const key = "User#" + videographerId;
+    const key = "USER#" + videographerId;
     const sortKey = "PROFILE#" + videographerId;
 
     const result = await this.docClient.get({
