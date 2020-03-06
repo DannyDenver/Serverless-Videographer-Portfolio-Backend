@@ -139,7 +139,7 @@ export class VideographerAccess {
 
     console.log(result);
 
-    return result.Items.map((videographer: VideographerDb) => videographersDBtoShortEntity(videographer))
+    return result.Items.map((videographer: VideographerDb) => videographersDBtoShortEntity(videographer));
   }
 
   async videographerExists(videographerId: string): Promise<boolean> {
