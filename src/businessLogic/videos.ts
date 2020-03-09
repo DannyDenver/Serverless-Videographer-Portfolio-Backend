@@ -60,7 +60,6 @@ export async function addVideo(event: APIGatewayProxyEvent): Promise<string> {
     video.url = videoAccess.getVideoUrl(videoId);
 
     await videoAccess.addVideo(video);
-    
     return uploadUrl;
 }
 

@@ -2,10 +2,8 @@ import { APIGatewayProxyEvent, APIGatewayEvent } from "aws-lambda";
 import { Videographer } from "../models/Videographer"
 import { getUserId, getJWT } from "../lambda/utils"
 import { VideographerAccess } from "../dataLayer/videographersAccess";
-import { NewVideographerRequest } from "../requests/NewVideographerRequest";
 import { createLogger } from "../utils/logger";
 import { parseUserId } from "../auth/utils";
-import { VideographerDb } from "../models/VideographerDb";
 
 const videographerAccess = new VideographerAccess()
 
@@ -46,6 +44,7 @@ export async function getVideographers(event: APIGatewayProxyEvent): Promise<Vid
 
 export async function getVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
     const videographerId = decodeURI(event.pathParameters.videographerId);
+
     return await videographerAccess.getVideographer(videographerId)
 }
 

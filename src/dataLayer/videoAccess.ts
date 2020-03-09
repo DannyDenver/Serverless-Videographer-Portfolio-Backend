@@ -5,6 +5,7 @@ import { VideoDb } from '../models/VideoDb'
 import { videosDBtoEntity } from '../utils/DboToEntityMapper'
 import { Video } from '../models/Video'
 import { videoToVideoDb } from '../utils/EntityToDboMapper'
+import { VideographerAccess } from './videographersAccess'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -20,9 +21,9 @@ export class VideoAccess {
     private readonly videoTable = process.env.VIDEOS_TABLE,
     private readonly videoIdIndex = process.env.VIDEO_ID_INDEX,
     private readonly appTable = process.env.APP_DB_TABLE,
-    private readonly timestampIndex = process.env.TIMESTAMP_INDEX,
-    private readonly mediaTypeIndex = process.env.MEDIA_TYPE_INDEX) {
-  }
+    private readonly mediaTypeIndex = process.env.MEDIA_TYPE_INDEX,
+    private readonly videographersAccess = new VideographerAccess()) {
+    }
 
   generateUploadUrl(videoId: string): string {
     return s3.getSignedUrl('putObject', {
@@ -37,12 +38,26 @@ export class VideoAccess {
   }
 
   async addVideo(video: Video) {
-    const videoDb: VideoDb = videoToVideoDb(video);
+    const primaryKey = "USER#" + video.videographerId;
+    const sortKey = "VIDEO#" + video.id;
 
-    await this.docClient.put({
-      TableName: this.videoTable,
-      Item: videoDb
-    }).promise()
+    const videographer = await this.videographersAccess.getVideographer(video.videographerId);
+    if (videographer) {
+      video.firstName = videographer.firstName;
+      video.lastName = videographer.lastName;
+      video.profilePic = videographer.profilePic;
+
+      const videoDb: VideoDb = videoToVideoDb(video);
+
+      const result = await this.docClient.put({
+        TableName: this.appTable,
+        Item: videoDb
+      }).promise();
+
+      return result;
+    }
+
+    return;
   }
 
   // async editVideo(video: VideoDb, videoId: string): Promise<VideoDb> {
@@ -93,10 +108,16 @@ export class VideoAccess {
 
   async getVideos(timestamp:string): Promise<[Video[], string]> {
     console.log(timestamp);
-    const result = await this.docClient.scan({
+
+    const result = await this.docClient.query({
         TableName: this.appTable,
         IndexName: this.mediaTypeIndex,
-        Limit: 10
+        KeyConditionExpression: 'mediaType = :mediaType',
+        ExpressionAttributeValues: {
+          ':mediaType': 'Video'
+        },
+        ScanIndexForward: false,
+        Limit: 20
       }).promise();
 
     const lastKey = result.LastEvaluatedKey ? result.LastEvaluatedKey.toString() : null;

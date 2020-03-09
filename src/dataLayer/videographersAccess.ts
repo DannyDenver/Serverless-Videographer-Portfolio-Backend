@@ -84,18 +84,20 @@ export class VideographerAccess {
   }
 
   async updateVideographer(videographerId: string, updatedVideographer: Videographer): Promise<Videographer> {
+    const partitionKey = "USER#" + videographerId;
+    const sortKey = "PROFILE#" + videographerId;
+
     const result = await this.docClient.update({
-      TableName: this.videographersTable,
+      TableName: this.appTable,
       Key: {
-        id: videographerId,
+        PK: partitionKey,
+        SK: sortKey
       },
-      ConditionExpression: 'id = :videographerId',
       UpdateExpression: 'set firstName = :firstame, lastName = :lastName, #loc = :location, bio = :bio',
       ExpressionAttributeNames: {
         '#loc': 'location'
       },
       ExpressionAttributeValues: {
-        ':videographerId': videographerId,
         ':firstame': updatedVideographer.firstName,
         ':lastName': updatedVideographer.lastName,
         ':location': updatedVideographer.location,
@@ -104,23 +106,30 @@ export class VideographerAccess {
       ReturnValues: 'ALL_NEW'
     }).promise();
 
-    return videographerDBtoEntity(result.Attributes as VideographerDb);
+    console.log(result);
+
+    const videographer = result.Attributes as VideographerDb;
+    return videographerDBtoEntity(videographer);
   }
 
   async getVideographer(videographerId: string): Promise<Videographer> {
-    console.log('Getting videographer', videographerId)
+    console.log('Getting videographer', videographerId);
+
+    const primaryKey = "USER#" + videographerId;
+    const sortKey = "PROFILE#" + videographerId;
 
     const result = await this.docClient.get({
-      TableName: this.videographersTable,
+      TableName: this.appTable,
       Key: {
-        id: videographerId
+        PK: primaryKey,
+        SK: sortKey,
       },
 
     }).promise()
 
     console.log(result)
 
-    return result.Item as Videographer
+    return videographerDBtoEntity(result.Item as VideographerDb);
   }
 
   async getVideographers(): Promise<Videographer[]> {

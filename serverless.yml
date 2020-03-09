@@ -39,6 +39,7 @@ provider:
     APP_DB_TABLE: reel-people-table-${self:provider.stage}
     TIMESTAMP_INDEX: TimestampIndex
     MEDIA_TYPE_INDEX: MediaTypeIndex
+    FIRST_LAST_NAME_INDEX: FirstLastNameIndex
 
     CONNECTIONS_TABLE: Connections-videographer-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
@@ -107,10 +108,8 @@ functions:
         Resource: "*"
       - Effect: Allow
         Action:
-          - dynamodb:Scan
           - dynamodb:GetItem
-          - dynamodb:PutItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
   
   AddVideographer:
     handler: src/lambda/http/videographers/addVideographer.handler
@@ -146,7 +145,7 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:UpdateItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
 
   AddProfilePicture:
     handler: src/lambda/http/videographers/addProfilePicture.handler
@@ -210,9 +209,8 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/${self:provider.environment.VIDEO_TIMESTAMP_INDEX}
       - Effect: Allow
         Action:
-          - dynamodb:Scan
           - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.TIMESTAMP_INDEX}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.MEDIA_TYPE_INDEX}
       - Effect: Allow
         Action:
           - dynamodb:Scan
@@ -257,7 +255,12 @@ functions:
           - dynamodb:GetItem
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.FIRST_LAST_NAME_INDEX}
         
+
   UpdateVideographerQueue:
     handler: src/lambda/http/updateVideographerQueue.handler
     iamRoleStatementsName: updateVideographQueueRole
@@ -306,7 +309,7 @@ functions:
             summary: Add a new video
             description: Add a new video to a videographer's portfolio
     iamRoleStatements:
-      - Effect: "Allow" 
+      - Effect: "Allow"
         Action:
         - "xray:PutTraceSegments"
         Resource: "*"
@@ -317,7 +320,8 @@ functions:
       - Effect: Allow
         Action: 
           - dynamodb:PutItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
   
   EditVideo: 
     handler: src/lambda/http/videos/editVideo.handler
@@ -659,6 +663,10 @@ resources:
             AttributeType: S
           - AttributeName: timestamp
             AttributeType: S
+          - AttributeName: firstName
+            AttributeType: S
+          - AttributeName: lastName
+            AttributeType: S
         KeySchema:
           - AttributeName: PK
             KeyType: HASH
@@ -677,6 +685,14 @@ resources:
             KeySchema:
             - AttributeName: timestamp
               KeyType: HASH
+            Projection: 
+              ProjectionType: ALL
+          - IndexName: ${self:provider.environment.FIRST_LAST_NAME_INDEX}
+            KeySchema: 
+            - AttributeName: lastName
+              KeyType: HASH
+            - AttributeName: firstName
+              KeyType: RANGE
             Projection: 
               ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST

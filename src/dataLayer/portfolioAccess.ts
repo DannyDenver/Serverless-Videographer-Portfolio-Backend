@@ -2,9 +2,7 @@ import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { Portfolio } from "../models/Portfolio";
-import { VideographerDb } from "../models/VideographerDb";
-import { videographerDBtoEntity, videosDBtoEntity } from "../utils/DboToEntityMapper";
-import { VideoDb } from '../models/VideoDb';
+import { portfolioDBtoEntity } from "../utils/DboToEntityMapper";
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -13,12 +11,13 @@ const s3 = new XAWS.S3({
 })
 
 export class PortfolioAccess {
-    constructor(
-      private readonly docClient: DocumentClient = createDynamoDBClient(),
-      private readonly appTable = process.env.APP_DB_TABLE) {
-    }
+  constructor(
+    private readonly docClient: DocumentClient = createDynamoDBClient(),
+    private readonly appTable = process.env.APP_DB_TABLE,
+    private readonly firstLastIndex = process.env.FIRST_LAST_NAME_INDEX) {
+  }
 
-async getPortfolio(videographerId) {
+  async getPortfolio(videographerId): Promise<Portfolio> {
     const primaryKey = 'USER#' + videographerId;
 
     const result = await this.docClient.query({
@@ -26,23 +25,29 @@ async getPortfolio(videographerId) {
       KeyConditionExpression: 'PK = :PK',
       ExpressionAttributeValues: {
         ':PK': primaryKey
+      },
+    }).promise();
+
+    console.log(result);
+    return portfolioDBtoEntity(result);
+  }
+
+  async getPortfolioByName(first: string, last: string): Promise<Portfolio> {
+    console.log('first', first);
+    console.log('last', last);
+
+    const result = await this.docClient.query({
+      TableName: this.appTable,
+      IndexName: this.firstLastIndex,
+      KeyConditionExpression: 'firstName = :firstName and lastName = :lastName',
+      ExpressionAttributeValues: {
+        ':firstName': first,
+        ':lastName': last
       }
     }).promise();
 
     console.log(result);
-    const portfolio = new Portfolio();
-
-    const videographerDb = result.Items.filter(item => item['SK'].indexOf('PROFILE') > -1)[0] as VideographerDb;
-    const videosDb = result.Items.filter(item => item['SK'].indexOf('VIDEO') > -1) as VideoDb[];
-
-    portfolio.profile = videographerDBtoEntity(videographerDb);
-    if (videosDb) {
-      portfolio.videos = videosDBtoEntity(videosDb);
-    }
-
-    console.log(portfolio)
-
-    return portfolio;
+    return portfolioDBtoEntity(result);
   }
 }
 

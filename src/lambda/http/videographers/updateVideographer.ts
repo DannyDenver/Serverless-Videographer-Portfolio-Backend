@@ -6,7 +6,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       const updatedVideographer = await updateVideographer(event)
 
       return {
-          statusCode: 200,
+          statusCode: 204,
           headers: {
             'Access-Control-Allow-Origin': '*'
           },

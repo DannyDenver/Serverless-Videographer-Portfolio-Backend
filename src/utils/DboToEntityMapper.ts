@@ -2,6 +2,22 @@ import { VideographerDb } from "../models/VideographerDb";
 import { Videographer } from "../models/Videographer";
 import { VideoDb } from "../models/VideoDb";
 import { Video } from "../models/Video";
+import { Portfolio } from "../models/Portfolio";
+
+export function portfolioDBtoEntity(result): Portfolio {
+    if (!result.Items) return;
+
+    const portfolio = new Portfolio();
+
+    const videographerDb = result.Items.filter(item => item['SK'].indexOf('PROFILE') > -1)[0] as VideographerDb;
+    const videosDb = result.Items.filter(item => item['SK'].indexOf('VIDEO') > -1) as VideoDb[];
+
+    portfolio.profile = videographerDBtoEntity(videographerDb);
+    if (videosDb) {
+      portfolio.videos = videosDBtoEntity(videosDb);
+    }
+    return portfolio;
+}
 
 export function videographerDBtoEntity(videographerDb: VideographerDb): Videographer {
     return {
