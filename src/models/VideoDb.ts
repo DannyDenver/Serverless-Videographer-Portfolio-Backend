@@ -9,4 +9,7 @@ export interface VideoDb {
     description: string
     timestamp: string
     genre?: string
+    order: number;
+    thumbnailUrl?: string;
+    mediaType: string;
 }

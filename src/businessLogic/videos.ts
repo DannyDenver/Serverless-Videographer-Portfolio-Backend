@@ -23,23 +23,24 @@ export async function getVideographerVideos(event: APIGatewayProxyEvent): Promis
     return await videoAccess.getVideographerVideos(videographerId);
 }
 
-export async function getVideo(event: APIGatewayProxyEvent): Promise<VideoDb> {
+export async function getVideo(event: APIGatewayProxyEvent): Promise<Video> {
     const videoId = event.pathParameters.videoId
+    console.log(videoId)
 
     return await videoAccess.getVideo(videoId);
 }
 
-// export async function editVideo(event: APIGatewayProxyEvent): Promise<VideoDb> {
-//     const videoId = event.pathParameters.videoId
-//     const video: Video = JSON.parse(event.body);
-//     const jwtUserId = getUserId(event);
+export async function editVideo(event: APIGatewayProxyEvent): Promise<Video> {
+    const videoId = event.pathParameters.videoId
+    const video: Video = JSON.parse(event.body);
+    const jwtUserId = getUserId(event);
 
-//     if (video.videographerId !== jwtUserId) {
-//         throw new Error("Cannot update other videographer's video.")
-//     }
+    if (video.videographerId !== jwtUserId) {
+        throw new Error("Cannot update other videographer's video.")
+    }
 
-//     return await videoAccess.editVideo(video, videoId);
-// }
+    return await videoAccess.editVideo(video);
+}
 
 export async function addVideo(event: APIGatewayProxyEvent): Promise<string> {
     const jwtUserId = getUserId(event);

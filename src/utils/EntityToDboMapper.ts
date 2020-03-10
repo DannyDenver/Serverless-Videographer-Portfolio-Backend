@@ -14,6 +14,8 @@ export function videoToVideoDb(video: Video): VideoDb {
         profilePic: video.profilePic,
         timestamp: video.timestamp,
         title: video.title,
-        url: video.url
+        url: video.url,
+        order: video.order,
+        mediaType: 'Video'
     }
 }

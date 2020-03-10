@@ -36,6 +36,9 @@ provider:
     EMAIL_SUBSCRIBER_TABLE: Subscribers-${self:provider.stage}
     VIDEOS_S3_BUCKET: serverless-videogapher-videos-bucket-${self:provider.stage}
     PROFILE_PIC_S3_BUCKET: serverless-videographer-profile-pic-bucket-${self:provider.stage}
+    COVER_PHOTO_S3_BUCKET: serverless-videographer-cover-photo-bucket-${self:provider.stage}
+    VIDEO_THUMBNAIL_S3_BUCKET: serverless-video-thumbnail-bucket-${self:provider.stage}
+
     APP_DB_TABLE: reel-people-table-${self:provider.stage}
     TIMESTAMP_INDEX: TimestampIndex
     MEDIA_TYPE_INDEX: MediaTypeIndex
@@ -170,6 +173,28 @@ functions:
         - "xray:PutTraceSegments"
         Resource: "*"    
 
+  AddCoverPhoto:
+    handler: src/lambda/http/videographers/addCoverPhoto.handler
+    events:
+      - http:
+          method: post
+          cors: true
+          path: videographers/{videographerId}/coverPhoto
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.COVER_PHOTO_S3_BUCKET}/*
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"    
+
   GetVideo:
     handler: src/lambda/http/videos/getVideo.handler
     events:
@@ -188,7 +213,7 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/${self:provider.environment.VIDEO_ID_INDEX}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.MEDIA_TYPE_INDEX}
 
   GetVideos:
     handler: src/lambda/http/videos/getVideos.handler
@@ -260,7 +285,6 @@ functions:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.FIRST_LAST_NAME_INDEX}
         
-
   UpdateVideographerQueue:
     handler: src/lambda/http/updateVideographerQueue.handler
     iamRoleStatementsName: updateVideographQueueRole
@@ -346,7 +370,29 @@ functions:
       - Effect: Allow
         Action: 
           - dynamodb:UpdateItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
+
+  AddThumbnailPhoto:
+    handler: src/lambda/http/videos/addThumbnailPhoto.handler
+    events:
+      - http:
+          method: post
+          cors: true
+          path: videos/{videoId}/thumbnailPhoto
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.VIDEO_THUMBNAIL_S3_BUCKET}/*
+      - Effect: "Allow" 
+        Action:
+        - "xray:PutTraceSegments"
+        Resource: "*"   
 
   DeleteVideo: 
     handler: src/lambda/http/videos/deleteVideo.handler
@@ -371,7 +417,7 @@ functions:
       - Effect: Allow
         Action: 
           - dynamodb:DeleteItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
 
   SendNotifications:
     environment: 
@@ -590,6 +636,72 @@ resources:
                 - HEAD
               MaxAge: 3000
 
+    ThumbnailPhotoBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.VIDEO_THUMBNAIL_S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
+
+    ThumbnailBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPolicy
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              Resource: 'arn:aws:s3:::${self:provider.environment.VIDEO_THUMBNAIL_S3_BUCKET}/*'
+        Bucket: !Ref ThumbnailPhotoBucket
+
+    CoverPhotoBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.COVER_PHOTO_S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
+
+    CoverPhotoBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPolicy
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              Resource: 'arn:aws:s3:::${self:provider.environment.COVER_PHOTO_S3_BUCKET}/*'
+        Bucket: !Ref CoverPhotoBucket
+        
     BucketPolicy:
       Type: AWS::S3::BucketPolicy
       Properties:

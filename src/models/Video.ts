@@ -9,4 +9,6 @@ export class Video {
     firstName: string;
     lastName: string;
     genre: string;
+    order: number;
+    thumbnailUrl?: string;
 }

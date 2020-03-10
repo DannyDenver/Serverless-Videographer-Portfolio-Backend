@@ -2,7 +2,7 @@ import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient, Key } from 'aws-sdk/clients/dynamodb'
 import { VideoDb } from '../models/VideoDb'
-import { videosDBtoEntity } from '../utils/DboToEntityMapper'
+import { videosDBtoEntity, videoDBtoEntity } from '../utils/DboToEntityMapper'
 import { Video } from '../models/Video'
 import { videoToVideoDb } from '../utils/EntityToDboMapper'
 import { VideographerAccess } from './videographersAccess'
@@ -19,7 +19,7 @@ export class VideoAccess {
     private readonly bucketName = process.env.VIDEOS_S3_BUCKET,
     private readonly urlExpiration = +process.env.SIGNED_URL_EXPIRATION,
     private readonly videoTable = process.env.VIDEOS_TABLE,
-    private readonly videoIdIndex = process.env.VIDEO_ID_INDEX,
+    private readonly videoThumbnailPhotoBucket = process.env.VIDEO_THUMBNAIL_S3_BUCKET,
     private readonly appTable = process.env.APP_DB_TABLE,
     private readonly mediaTypeIndex = process.env.MEDIA_TYPE_INDEX,
     private readonly videographersAccess = new VideographerAccess()) {
@@ -60,36 +60,61 @@ export class VideoAccess {
     return;
   }
 
-  // async editVideo(video: VideoDb, videoId: string): Promise<VideoDb> {
-  //   const result = await this.docClient.update({
-  //     TableName: this.videoTable,
-  //     Key: {
-  //       videographerId: video.videographerId,
-  //       id: videoId
-  //     },
-  //     ConditionExpression: 'id = :id',
-  //     UpdateExpression: 'set title = :title, description = :description',
-  //     ExpressionAttributeValues: {
-  //       ':title': video.title,
-  //       ':description': video.description,
-  //       ':id': video.id
-  //     },
-  //     ReturnValues: 'ALL_NEW'
-  //   }).promise()
+  async editVideo(video: Video): Promise<Video> {
+    const primaryKey = 'USER#' + video.videographerId;
+    const sortKey = 'VIDEO#' + video.id;
 
-  //   return result.Attributes as VideoDb;
-  // }
 
-  async deleteVideo(videographerId: string, id: string) {
-    return await this.docClient.delete({
-      TableName: this.videoTable,
+    const result = await this.docClient.update({
+      TableName: this.appTable,
       Key: {
-        videographerId: videographerId,
-        id: id
+        PK: primaryKey,
+        SK: sortKey
       },
-      ConditionExpression: 'id = :id',
+      UpdateExpression: 'set title = :title, description = :description, genre = :genre, #ord = :order',
       ExpressionAttributeValues: {
-        ':id': id,
+        ':title': video.title,
+        ':description': video.description,
+        ':genre': video.genre,
+        ':order': video.order
+      },
+      ExpressionAttributeNames: {
+        '#ord': 'order'
+      },
+      ReturnValues: 'ALL_NEW'
+    }).promise()
+
+    return videoDBtoEntity(result.Attributes as VideoDb);
+  }
+
+  async addThumbnailPhoto(videographerId: string, videoId: string) {
+    const link = `https://${this.videoThumbnailPhotoBucket}.s3.amazonaws.com/${videoId}`;
+
+    const primaryKey = 'USER#' + videographerId;
+    const sortKey = 'VIDEO#' + videoId;
+
+    await this.docClient.update({
+      TableName: this.appTable,
+      Key: {
+        PK: primaryKey,
+        SK: sortKey
+      },
+      UpdateExpression: 'set thumbnailUrl = :thumbnailUrl',
+      ExpressionAttributeValues: {
+        ':thumbnailUrl': link,
+      },
+    }).promise();
+  }
+
+  async deleteVideo(videographerId: string, videoId: string) {
+    const primaryKey = 'USER#' + videographerId;
+    const sortKey = 'VIDEO#' + videoId; 
+
+    return await this.docClient.delete({
+      TableName: this.appTable,
+      Key: {
+        PK: primaryKey,
+        SK: sortKey
       }
     }).promise()
   }
@@ -125,17 +150,21 @@ export class VideoAccess {
     return [videosDBtoEntity(result.Items as VideoDb[]), lastKey];
   }
 
-  async getVideo(videoId: string): Promise<VideoDb> {
+  async getVideo(videoId: string): Promise<Video> {
     const result = await this.docClient.query({
-      TableName: this.videoTable,
-      IndexName: this.videoIdIndex,
-      KeyConditionExpression: 'id = :videoId',
+      TableName: this.appTable,
+      IndexName: this.mediaTypeIndex,
+      KeyConditionExpression: 'mediaType = :mediaType',
+      FilterExpression: 'SK = :SK',
       ExpressionAttributeValues: {
-        ':videoId': videoId
+        ':mediaType': 'Video',
+        ':SK': 'VIDEO#' + videoId
       }
     }).promise();
+
+    console.log(result)
   
-    return result.Items[0] as VideoDb;
+    return videoDBtoEntity(result.Items[0] as VideoDb);
   }
 }
 

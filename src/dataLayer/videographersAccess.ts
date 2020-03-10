@@ -12,6 +12,7 @@ export class VideographerAccess {
     private readonly docClient: DocumentClient = createDynamoDBClient(),
     private readonly videographersTable = process.env.VIDEOGRAPHERS_TABLE,
     private readonly bucketName = process.env.PROFILE_PIC_S3_BUCKET,
+    private readonly coverPhotoBucket = process.env.COVER_PHOTO_S3_BUCKET,
     private readonly appTable = process.env.APP_DB_TABLE) {
   }
 
@@ -30,6 +31,25 @@ export class VideographerAccess {
       UpdateExpression: 'set profilePic = :pictureUrl',
       ExpressionAttributeValues: {
         ':pictureUrl': link,
+      },
+    }).promise();
+  }
+
+  async addCoverPhoto(videographerId: string) {
+    const link = `https://${this.coverPhotoBucket}.s3.amazonaws.com/${videographerId}`;
+
+    const primaryKey = 'USER#' + videographerId;
+    const sortKey = 'PROFILE#' + videographerId;
+
+    await this.docClient.update({
+      TableName: this.appTable,
+      Key: {
+        PK: primaryKey,
+        SK: sortKey
+      },
+      UpdateExpression: 'set coverPhoto = :coverPhoto',
+      ExpressionAttributeValues: {
+        ':coverPhoto': link,
       },
     }).promise();
   }
@@ -124,7 +144,6 @@ export class VideographerAccess {
         PK: primaryKey,
         SK: sortKey,
       },
-
     }).promise()
 
     console.log(result)

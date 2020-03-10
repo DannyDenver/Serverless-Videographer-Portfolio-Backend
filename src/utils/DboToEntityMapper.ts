@@ -56,6 +56,8 @@ export function videoDBtoEntity(videoDb: VideoDb): Video {
         profilePic: videoDb.profilePic,
         firstName: videoDb.firstName,
         lastName: videoDb.lastName,
-        genre: videoDb.genre
+        genre: videoDb.genre,
+        order: videoDb.order,
+        thumbnailUrl: videoDb.thumbnailUrl
     }
 }
