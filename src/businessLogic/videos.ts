@@ -1,19 +1,24 @@
-import { VideoAccess } from "../dataLayer/videoAccess";
+import { VideoAccess } from "../dataLayer/databaseAccess/videoAccess";
 import * as uuid from 'uuid'
 import { VideoDb } from "../models/VideoDb";
 import { APIGatewayProxyEvent, APIGatewayEvent } from "aws-lambda";
 import { getUserId } from "../lambda/utils"
 import { createLogger } from "../utils/logger";
 import { Video } from "../models/Video";
+import { VideoFileStoreAccess } from "../dataLayer/fileStoreAccess/videoFileStoreAccess";
 
 const videoAccess = new VideoAccess();
+const videoFileStoreAccess = new VideoFileStoreAccess();
 const logger = createLogger('video')
 
 export async function getVideos(event: APIGatewayEvent): Promise<[Video[], string]> {
     console.log(event);
-    const timestamp = event.queryStringParameters && event.queryStringParameters.timestamp ? event.queryStringParameters.timestamp : null;
+    let video:Video = null
+    if (event.queryStringParameters && event.queryStringParameters.video) {
+        video = JSON.parse(event.queryStringParameters.video);
+    }
 
-    return await videoAccess.getVideos(timestamp);
+    return await videoAccess.getVideos(video);
 }
 
 export async function getVideographerVideos(event: APIGatewayProxyEvent): Promise<VideoDb[]> {
@@ -53,7 +58,7 @@ export async function addVideo(event: APIGatewayProxyEvent): Promise<string> {
     };
 
     const videoId = uuid.v4();
-    const uploadUrl = videoAccess.generateUploadUrl(videoId);
+    const uploadUrl = videoFileStoreAccess.generateUploadUrl(videoId);
     console.log('video upload url', uploadUrl);
 
     video.id = videoId;
@@ -71,12 +76,15 @@ export async function deleteVideo(event: APIGatewayProxyEvent): Promise<string> 
 
     if (jwtUserId !== videographerId) {
         logger.alert(`User ${jwtUserId} attempted to delete video ${videoId} from videographer ${videographerId}'s portfolio`);
-        throw new Error("User cannot update other profiles");
+        throw new Error("Not authorized to delete video.");
     };
 
     console.log(`Deleting video ${videoId} from videographer ${videographerId}`);
 
+    await videoFileStoreAccess.deleteVideo(videoId);
+
     await videoAccess.deleteVideo(videographerId, videoId);
+    console.log("deleted video id", videoId);
 
     return videoId;
 }

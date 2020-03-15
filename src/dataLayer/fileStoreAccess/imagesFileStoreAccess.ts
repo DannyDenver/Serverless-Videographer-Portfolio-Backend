@@ -2,7 +2,6 @@ import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 
 const XAWS = AWSXRay.captureAWS(AWS)
-
 const s3 = new XAWS.S3({
     signatureVersion: 'v4'
 })
@@ -20,23 +19,22 @@ export class ImagesAccess {
             Bucket: this.bucketName,
             Key: imageId,
             Expires: this.urlExpiration
-        })
-    }
+        });
+    };
     
     generateCoverPhotoUploadUrl(imageId: string): string {
         return s3.getSignedUrl('putObject', {
             Bucket: this.coverPhotoBucket,
             Key: imageId,
             Expires: this.urlExpiration
-        })
-    }
+        });
+    };
 
     generateVideoThumbnailUploadUrl(imageId: string): string {
         return s3.getSignedUrl('putObject', {
             Bucket: this.videoThumbnailPhotoBucket,
             Key: imageId,
             Expires: this.urlExpiration
-        })
-    }
-
+        });
+    };
 }

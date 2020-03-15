@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { PortfolioAccess } from "../dataLayer/portfolioAccess";
+import { PortfolioAccess } from "../dataLayer/databaseAccess/portfolioAccess";
 import { capitalizeWord } from "../utils/StringUtils";
 import { getUserId } from "../lambda/utils";
 

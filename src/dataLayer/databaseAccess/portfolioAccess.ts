@@ -1,14 +1,10 @@
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
-import { Portfolio } from "../models/Portfolio";
-import { portfolioDBtoEntity } from "../utils/DboToEntityMapper";
+import { Portfolio } from "../../models/Portfolio";
+import { portfolioDBtoEntity } from "../../utils/DboToEntityMapper";
 
 const XAWS = AWSXRay.captureAWS(AWS)
-
-const s3 = new XAWS.S3({
-  signatureVersion: 'v4'
-})
 
 export class PortfolioAccess {
   constructor(
@@ -29,7 +25,7 @@ export class PortfolioAccess {
     }).promise();
 
     console.log(result);
-    return portfolioDBtoEntity(result);
+    return result.Items.length > 0 ? portfolioDBtoEntity(result) : null;
   }
 
   async getPortfolioByName(first: string, last: string): Promise<Portfolio> {

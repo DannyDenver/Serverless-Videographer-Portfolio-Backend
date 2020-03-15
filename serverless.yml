@@ -714,6 +714,16 @@ resources:
               Principal: '*'
               Action: 's3:GetObject'
               Resource: 'arn:aws:s3:::${self:provider.environment.VIDEOS_S3_BUCKET}/*'
+            - Sid: OnlyVideoUploads
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:PutObject'
+              Resource: ["arn:aws:s3:::${self:provider.environment.VIDEOS_S3_BUCKET}/*.mp4"]
+            # - Sid: OnlyVideoUploads
+            #   Effect: Deny
+            #   Action: 's3:PutObject'
+            #   Principal: '*'
+            #   NotResource: ["arn:aws:s3:::${self:provider.environment.VIDEOS_S3_BUCKET}/*.mp4"]
         Bucket: !Ref VideosBucket
         
     ProfilePicBucketPolicy:

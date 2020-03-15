@@ -1,9 +1,9 @@
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
-import { VideographerDb } from '../models/VideographerDb';
-import { Videographer } from '../models/Videographer';
-import { videographersDBtoShortEntity, videographerDBtoEntity } from '../utils/DboToEntityMapper';
+import { VideographerDb } from '../../models/VideographerDb';
+import { Videographer } from '../../models/Videographer';
+import { videographersDBtoShortEntity, videographerDBtoEntity, videographerToDb } from '../../utils/DboToEntityMapper';
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -54,30 +54,16 @@ export class VideographerAccess {
     }).promise();
   }
 
-  async createVideographer(userId, newVideographer: Videographer): Promise<Videographer> {
-    const partitionKey = "USER#" + userId;
-    const sortKey = "PROFILE#" + userId;
+  async createVideographer(newVideographer: Videographer): Promise<Videographer> {
+    const newVideographerDb = videographerToDb(newVideographer);
 
-    const newVideographerDb: VideographerDb = {
-      PK: partitionKey,
-      SK: sortKey,
-      firstName: newVideographer.firstName,
-      lastName: newVideographer.lastName,
-      location: newVideographer.location || null,
-      bio: newVideographer.bio || null,
-      profilePic: newVideographer.profilePic || null,
-      coverPhoto: newVideographer.coverPhoto || null,
-    };
-
-    const result = await this.docClient.put({
+    await this.docClient.put({
       TableName: this.appTable,
-      Item: newVideographerDb
+      Item: newVideographerDb,
+      ReturnValues: 'ALL_OLD'
     }).promise();
 
-    const createdVideographerDb = result.Attributes as VideographerDb;
-    console.log(newVideographer);
-
-    return videographerDBtoEntity(createdVideographerDb);
+    return newVideographer;
   }
 
   async addSubscriber(videographerId: string, email: string) {
@@ -144,7 +130,7 @@ export class VideographerAccess {
         PK: primaryKey,
         SK: sortKey,
       },
-    }).promise()
+    }).promise();
 
     console.log(result)
 
@@ -152,6 +138,7 @@ export class VideographerAccess {
   }
 
   async getVideographers(): Promise<Videographer[]> {
+    console.log("getting videographers");
     const result = await this.docClient.scan({
       TableName: this.appTable,
       ProjectionExpression: "SK, firstName, lastName, profilePic, PK, #loc",
@@ -161,8 +148,7 @@ export class VideographerAccess {
       },
       ExpressionAttributeValues: {
         ':PROFILE': 'PROFILE#'
-      },
-      Limit: 8
+      }
     }).promise();
 
     console.log(result);

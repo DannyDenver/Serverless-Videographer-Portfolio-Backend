@@ -1,5 +1,5 @@
 import { DynamoDBStreamEvent, APIGatewayEvent } from "aws-lambda";
-import { VideographerAccess } from "../dataLayer/videographersAccess";
+import { VideographerAccess } from "../dataLayer/databaseAccess/videographersAccess";
 import { EmailService } from "../serviceLayer/emailService";
 import { NewVideoNotification } from "../models/NewVideoNotification";
 

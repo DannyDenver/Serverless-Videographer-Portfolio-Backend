@@ -1,9 +1,9 @@
-import { ImagesAccess } from "../dataLayer/imagesAccess";
+import { ImagesAccess } from "../dataLayer/fileStoreAccess/imagesFileStoreAccess";
 import { APIGatewayEvent } from "aws-lambda";
 import { getUserId } from "../lambda/utils";
 import { createLogger } from "../utils/logger";
-import { VideographerAccess } from "../dataLayer/videographersAccess";
-import { VideoAccess } from "../dataLayer/videoAccess";
+import { VideographerAccess } from "../dataLayer/databaseAccess/videographersAccess";
+import { VideoAccess } from "../dataLayer/databaseAccess/videoAccess";
 
 const logger = createLogger('todos');
 

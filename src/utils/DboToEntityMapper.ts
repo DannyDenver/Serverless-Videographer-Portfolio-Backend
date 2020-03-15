@@ -19,6 +19,23 @@ export function portfolioDBtoEntity(result): Portfolio {
     return portfolio;
 }
 
+export function videographerToDb(videographer: Videographer): VideographerDb {
+    const VideographerDb: VideographerDb = {
+      PK: "USER#" + videographer.id,
+      SK: "PROFILE#" + videographer.id,
+      firstName: videographer.firstName,
+      lastName: videographer.lastName,
+      location: videographer.location || null,
+      bio: videographer.bio || null,
+      profilePic: videographer.profilePic || null,
+      coverPhoto: videographer.coverPhoto || null,
+    };
+
+    console.log('converted videographer', VideographerDb)
+
+    return VideographerDb;
+}
+
 export function videographerDBtoEntity(videographerDb: VideographerDb): Videographer {
     return {
         id: videographerDb.PK.replace("USER#", ''),

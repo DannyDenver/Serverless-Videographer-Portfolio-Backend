@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayEvent } from "aws-lambda";
 import { Videographer } from "../models/Videographer"
 import { getUserId, getJWT } from "../lambda/utils"
-import { VideographerAccess } from "../dataLayer/videographersAccess";
+import { VideographerAccess } from "../dataLayer/databaseAccess/videographersAccess";
 import { createLogger } from "../utils/logger";
 import { parseUserId } from "../auth/utils";
 
@@ -19,9 +19,10 @@ export async function addVideographer(event: APIGatewayProxyEvent): Promise<Vide
             console.log(userId)
 
             const newVideographer: Videographer = JSON.parse(event.body);
+            newVideographer.id = userId;
             
             console.log('creating new videographer', newVideographer);
-            return await videographerAccess.createVideographer(userId, newVideographer);
+            return await videographerAccess.createVideographer(newVideographer);
         }
     }
 }
@@ -37,6 +38,7 @@ export async function getVideographers(event: APIGatewayProxyEvent): Promise<Vid
     if (token) {
         let auth0Id = parseUserId(token);
         videographerId = auth0Id.includes("|") ? auth0Id.split("|")[1] : auth0Id;   
+        console.log('videographer getting videographer list', videographerId)
     }
 
     return videographers.filter(videographer => videographer.id !==  videographerId && videographer.firstName && videographer.lastName);

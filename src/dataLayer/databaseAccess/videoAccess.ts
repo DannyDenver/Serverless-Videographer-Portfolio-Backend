@@ -1,23 +1,18 @@
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
-import { DocumentClient, Key } from 'aws-sdk/clients/dynamodb'
-import { VideoDb } from '../models/VideoDb'
-import { videosDBtoEntity, videoDBtoEntity } from '../utils/DboToEntityMapper'
-import { Video } from '../models/Video'
-import { videoToVideoDb } from '../utils/EntityToDboMapper'
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import { VideoDb } from '../../models/VideoDb'
+import { videosDBtoEntity, videoDBtoEntity } from '../../utils/DboToEntityMapper'
+import { Video } from '../../models/Video'
+import { videoToVideoDb } from '../../utils/EntityToDboMapper'
 import { VideographerAccess } from './videographersAccess'
 
 const XAWS = AWSXRay.captureAWS(AWS)
-
-const s3 = new XAWS.S3({
-  signatureVersion: 'v4'
-})
 
 export class VideoAccess {
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
     private readonly bucketName = process.env.VIDEOS_S3_BUCKET,
-    private readonly urlExpiration = +process.env.SIGNED_URL_EXPIRATION,
     private readonly videoTable = process.env.VIDEOS_TABLE,
     private readonly videoThumbnailPhotoBucket = process.env.VIDEO_THUMBNAIL_S3_BUCKET,
     private readonly appTable = process.env.APP_DB_TABLE,
@@ -25,23 +20,13 @@ export class VideoAccess {
     private readonly videographersAccess = new VideographerAccess()) {
     }
 
-  generateUploadUrl(videoId: string): string {
-    return s3.getSignedUrl('putObject', {
-      Bucket: this.bucketName,
-      Key: videoId,
-      Expires: this.urlExpiration
-    })
-  }
-
   getVideoUrl(videoId: string): string {
-    return `https://${this.bucketName}.s3.amazonaws.com/${videoId}`
+    return `https://${this.bucketName}.s3.amazonaws.com/${videoId}`;
   }
 
   async addVideo(video: Video) {
-    const primaryKey = "USER#" + video.videographerId;
-    const sortKey = "VIDEO#" + video.id;
-
     const videographer = await this.videographersAccess.getVideographer(video.videographerId);
+   
     if (videographer) {
       video.firstName = videographer.firstName;
       video.lastName = videographer.lastName;
@@ -116,7 +101,7 @@ export class VideoAccess {
         PK: primaryKey,
         SK: sortKey
       }
-    }).promise()
+    }).promise();
   }
 
   async getVideographerVideos(videographerId: string): Promise<VideoDb[]> {
@@ -131,10 +116,12 @@ export class VideoAccess {
     return result.Items as VideoDb[];
   }
 
-  async getVideos(timestamp:string): Promise<[Video[], string]> {
-    console.log(timestamp);
+  async getVideos(lastVideo:Video): Promise<[Video[], string]> {
+    console.log(lastVideo);
+    let result;
 
-    const result = await this.docClient.query({
+    if (lastVideo) {
+      result = await this.docClient.query({
         TableName: this.appTable,
         IndexName: this.mediaTypeIndex,
         KeyConditionExpression: 'mediaType = :mediaType',
@@ -142,10 +129,30 @@ export class VideoAccess {
           ':mediaType': 'Video'
         },
         ScanIndexForward: false,
-        Limit: 20
+        ExclusiveStartKey: {
+          SK: 'VIDEO#' + lastVideo.id,
+          mediaType: 'Video',
+          PK: 'USER#' + lastVideo.videographerId,
+          timestamp: lastVideo.timestamp
+        },
+        Limit: 5,
       }).promise();
+    }else {
+      result = await this.docClient.query({
+        TableName: this.appTable,
+        IndexName: this.mediaTypeIndex,
+        KeyConditionExpression: 'mediaType = :mediaType',
+        ExpressionAttributeValues: {
+          ':mediaType': 'Video'
+        },
+        ScanIndexForward: false,
+        Limit: 5,
+      }).promise();
+    }
 
+    console.log(result.LastEvaluatedKey);
     const lastKey = result.LastEvaluatedKey ? result.LastEvaluatedKey.toString() : null;
+    console.log(lastKey);
     
     return [videosDBtoEntity(result.Items as VideoDb[]), lastKey];
   }
