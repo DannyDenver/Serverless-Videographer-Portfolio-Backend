@@ -13,7 +13,6 @@ export class VideoAccess {
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
     private readonly bucketName = process.env.VIDEOS_S3_BUCKET,
-    private readonly videoTable = process.env.VIDEOS_TABLE,
     private readonly videoThumbnailPhotoBucket = process.env.VIDEO_THUMBNAIL_S3_BUCKET,
     private readonly appTable = process.env.APP_DB_TABLE,
     private readonly mediaTypeIndex = process.env.MEDIA_TYPE_INDEX,
@@ -102,18 +101,6 @@ export class VideoAccess {
         SK: sortKey
       }
     }).promise();
-  }
-
-  async getVideographerVideos(videographerId: string): Promise<VideoDb[]> {
-    const result = await this.docClient.query({
-      TableName: this.videoTable,
-      KeyConditionExpression: 'videographerId = :videographerId',
-      ExpressionAttributeValues: {
-        ':videographerId': videographerId
-      }
-    }).promise();
-
-    return result.Items as VideoDb[];
   }
 
   async getVideos(lastVideo:Video): Promise<[Video[], string]> {

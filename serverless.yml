@@ -78,11 +78,24 @@ functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  GetVideographers:
-    handler: src/lambda/http/videographers/getVideographers.handler
+  VideographersResource:
+    handler: src/lambda/http/videographers/videographersResource.handler
+    iamRoleStatementsName: videographersResourceRole
     events: 
       - http: 
           method: get
+          path: videographers/{videographerId}
+          cors: true
+      - http: 
+          method: get
+          path: videographers
+          cors: true
+      - http: 
+          method: patch
+          path: videographers
+          cors: true
+      - http: 
+          method: post
           path: videographers
           cors: true
     iamRoleStatements:
@@ -95,61 +108,14 @@ functions:
           - dynamodb:Scan
           - dynamodb:GetItem
           - dynamodb:PutItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
-  
-  GetVideographer:
-    handler: src/lambda/http/videographers/getVideographer.handler
-    events: 
-      - http: 
-          method: get
-          path: videographers/{videographerId}
-          cors: true
-    iamRoleStatements:
-      - Effect: "Allow" 
-        Action:
-        - "xray:PutTraceSegments"
-        Resource: "*"
-      - Effect: Allow
-        Action:
-          - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
-  
-  AddVideographer:
-    handler: src/lambda/http/videographers/addVideographer.handler
-    events: 
-      - http: 
-          method: post
-          path: videographers
-          cors: true
-    iamRoleStatements:
-      - Effect: "Allow"
-        Action:
-        - "xray:PutTraceSegments"
-        Resource: "*"
-      - Effect: Allow
-        Action:
-          - dynamodb:PutItem
-          - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
-  
-  UpdateVideographer:
-    handler: src/lambda/http/videographers/updateVideographer.handler
-    events: 
-      - http: 
-          method: patch
-          path: videographers
-          cors: true
-          authorizer: Auth
-    iamRoleStatements:
-      - Effect: "Allow" 
-        Action:
-        - "xray:PutTraceSegments"
-        Resource: "*"
-      - Effect: Allow
-        Action:
           - dynamodb:UpdateItem
+          - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
-
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.FIRST_LAST_NAME_INDEX}
+        
   AddProfilePicture:
     handler: src/lambda/http/videographers/addProfilePicture.handler
     events:
@@ -240,28 +206,6 @@ functions:
         Action:
           - dynamodb:Scan
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
-
-  GetVideographerVideos:
-    handler: src/lambda/http/videos/getVideographerVideos.handler
-    iamRoleStatementsName: GetUserVideosRole
-    events:
-      - http:
-          method: get
-          path: videographers/{videographerId}/videos
-          cors: true
-    iamRoleStatements:
-      - Effect: "Allow" 
-        Action:
-        - "xray:PutTraceSegments"
-        Resource: "*"
-      - Effect: Allow
-        Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
-      - Effect: Allow
-        Action:
-          - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOGRAPHERS_TABLE}
 
   GetPortfolio:
     handler: src/lambda/http/getPortfolio.handler

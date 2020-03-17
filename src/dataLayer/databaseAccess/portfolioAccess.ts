@@ -24,7 +24,6 @@ export class PortfolioAccess {
       },
     }).promise();
 
-    console.log(result);
     return result.Items.length > 0 ? portfolioDBtoEntity(result) : null;
   }
 

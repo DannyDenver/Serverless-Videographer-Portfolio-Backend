@@ -7,11 +7,12 @@ const videographerAccess = new PortfolioAccess()
 
 
 export async function getPortfolio(event: APIGatewayProxyEvent): Promise<any> {
-    const videographerId = decodeURI(event.pathParameters.videographerId);
+    let videographerId = decodeURI(event.pathParameters.videographerId);
     console.log('videographerId', videographerId);
 
-    if (videographerId === "your-portfolio") {
-        const videographerId = getUserId(event);
+    if (videographerId == "your-portfolio") {
+        videographerId = getUserId(event);
+        console.log('getting logged in videographer with Id', videographerId)
 
         return await videographerAccess.getPortfolio(videographerId);
     }
