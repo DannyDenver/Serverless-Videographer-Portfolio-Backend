@@ -21,12 +21,14 @@ export async function addProfilePicture(event: APIGatewayEvent): Promise<string>
     }
 
     logger.info(`Attaching profile picture to videographer ${videographerId}`)
+    const fileType = JSON.parse(event.body)
 
-    const uploadUrl = imagesAccess.generateUploadUrl(videographerId)
+    const imageId = fileType && fileType.fileType ? userId + '.' + fileType.fileType : userId;
+    const uploadUrl = imagesAccess.generateUploadUrl(imageId)
 
     logger.info(`Profile picture url for videographer ${videographerId}`, uploadUrl);
 
-    await videographerAccess.addProfilePicture(videographerId)
+    await videographerAccess.addProfilePicture(videographerId, imageId)
     
     return uploadUrl
 }

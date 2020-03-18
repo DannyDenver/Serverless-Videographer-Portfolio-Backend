@@ -16,8 +16,8 @@ export class VideographerAccess {
     private readonly appTable = process.env.APP_DB_TABLE) {
   }
 
-  async addProfilePicture(videographerId: string) {
-    const link = `https://${this.bucketName}.s3.amazonaws.com/${videographerId}`;
+  async addProfilePicture(videographerId: string, imageId: string) {
+    const link = `https://${this.bucketName}.s3.amazonaws.com/${imageId}`;
 
     const primaryKey = 'USER#' + videographerId;
     const sortKey = 'PROFILE#' + videographerId;
