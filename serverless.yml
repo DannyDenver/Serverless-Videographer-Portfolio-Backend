@@ -115,7 +115,11 @@ functions:
         Action:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.FIRST_LAST_NAME_INDEX}
-        
+      - Effect: Allow
+        Action:
+          - SSM:GetParameter
+        Resource: '*'
+
   AddProfilePicture:
     handler: src/lambda/http/videographers/addProfilePicture.handler
     events:

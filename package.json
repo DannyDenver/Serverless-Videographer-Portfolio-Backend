@@ -23,6 +23,7 @@
     "serverless-plugin-canary-deployments": "^0.4.8",
     "serverless-reqvalidator-plugin": "^1.0.3",
     "source-map-support": "^0.5.10",
+    "twilio": "^3.41.1",
     "uuid": "^3.3.3",
     "winston": "^3.2.1"
   },
