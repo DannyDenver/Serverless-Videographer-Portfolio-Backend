@@ -64,17 +64,20 @@ export async function updateVideographer(event: APIGatewayProxyEvent): Promise<V
     return await videographerAccess.updateVideographer(videographerId, updatedVideographer)
 }
 
-export async function addSubscriber(event: APIGatewayEvent): Promise<Boolean>  {
+export async function addSubscriber(event: APIGatewayEvent): Promise<String>  {
     const videographerId = decodeURI(event.pathParameters.videographerId);
     const phoneNumber = event.pathParameters.phoneNumber;
     const videographer: Videographer = JSON.parse(event.body);
 
     try {
-        console.log(`${phoneNumber} is subscribed to ${videographerId}`);
-        await videographerAccess.addSubscriber(videographerId, phoneNumber);
-    
-        await textService.sendMessage(phoneNumber, `You are now subscribed to ${videographer.firstName} ${videographer.lastName} videos. Whenever a new video is updated by ${videographer.firstName}, you will receive a text message.`);
-        return true;
+        const realNumber = await textService.verifyNumber(phoneNumber);
+        if (realNumber) {
+            await videographerAccess.addSubscriber(videographerId, phoneNumber);
+            await textService.sendMessage(phoneNumber, `You are now subscribed to ${videographer.firstName} ${videographer.lastName}'s video portfolio.`);
+            return `${phoneNumber} is subscribed to ${videographerId}`;
+        }else {
+            throw new Error(`Number ${phoneNumber} cannot be verified or is not in E.164 international numbering format.`);
+        }
     }catch(error) {
         console.log("error subscribing")
         throw new Error(`An error occured while subscribing to ${videographer.firstName} ${videographer.lastName}`);
