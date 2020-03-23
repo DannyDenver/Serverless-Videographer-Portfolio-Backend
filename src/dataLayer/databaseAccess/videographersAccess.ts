@@ -66,27 +66,29 @@ export class VideographerAccess {
     return newVideographer;
   }
 
-  async addSubscriber(videographerId: string, email: string) {
-    console.log("trying to add subscriber");
+  async addSubscriber(videographerId: string, phoneNumber: string): Promise<Boolean> {
+    console.log("Attempting to add subscriber");
+    const primaryKey = "USER#" + videographerId;
+    const sortKey = "PROFILE#" + videographerId;
+
     const result = await this.docClient.update({
-      TableName: this.videographersTable,
+      TableName: this.appTable,
       Key: {
-        id: videographerId,
+        PK: primaryKey,
+        SK: sortKey,
       },
-      ConditionExpression: 'id = :videographerId',
-      UpdateExpression: "SET #subscribers = list_append(if_not_exists(#subscribers, :empty_list), :email)",
+      UpdateExpression: "SET #subscribers = list_append(if_not_exists(#subscribers, :empty_list), :phoneNumber)",
       ExpressionAttributeNames: {
         '#subscribers': 'subscribers'
       },
       ExpressionAttributeValues: {
-        ':videographerId': videographerId,
-        ':email': [email],
+        ':phoneNumber': [phoneNumber],
         ':empty_list': []
       },
       ReturnValues: 'ALL_NEW'
     }).promise();
 
-    return result.Attributes as VideographerDb;
+    return result.$response.error ? false : true;
   }
 
   async updateVideographer(videographerId: string, updatedVideographer: Videographer): Promise<Videographer> {

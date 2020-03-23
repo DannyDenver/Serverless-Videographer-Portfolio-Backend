@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayProxyEvent } from "aws-lambda";
-import { getVideographers, updateVideographer, addVideographer } from "../../../businessLogic/videographers";
+import { getVideographers, updateVideographer, addVideographer, addSubscriber } from "../../../businessLogic/videographers";
 import { getPortfolio } from "../../../businessLogic/portfolio";
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -12,9 +12,14 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   try {
     switch (event.httpMethod) {
       case 'POST':
-        body = await addVideographer(event);
-        statusCode = 201;
-        break;
+        if (event.pathParameters && event.pathParameters.phoneNumber && event.pathParameters.videographerId) {
+          body = await addSubscriber(event);
+          statusCode = 202
+        } else {
+          body = await addVideographer(event);
+          statusCode = 201;
+          break;
+        }
 
       case 'PATCH':
         body = await updateVideographer(event);

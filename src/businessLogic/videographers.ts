@@ -4,9 +4,10 @@ import { getUserId, getJWT } from "../lambda/utils"
 import { VideographerAccess } from "../dataLayer/databaseAccess/videographersAccess";
 import { createLogger } from "../utils/logger";
 import { parseUserId } from "../auth/utils";
+import { TextMessageService } from "../microServiceLayer/textService";
 
 const videographerAccess = new VideographerAccess()
-
+const textService = new TextMessageService();
 const logger = createLogger('videographer');
 
 export async function addVideographer(event: APIGatewayProxyEvent): Promise<Videographer> {
@@ -63,11 +64,19 @@ export async function updateVideographer(event: APIGatewayProxyEvent): Promise<V
     return await videographerAccess.updateVideographer(videographerId, updatedVideographer)
 }
 
-export async function addSubscriber(event: APIGatewayEvent): Promise<Videographer>  {
+export async function addSubscriber(event: APIGatewayEvent): Promise<Boolean>  {
     const videographerId = decodeURI(event.pathParameters.videographerId);
-    const email = event.pathParameters.email;
+    const phoneNumber = event.pathParameters.phoneNumber;
+    const videographer: Videographer = JSON.parse(event.body);
 
-    console.log(videographerId, email)
-
-    return await videographerAccess.addSubscriber(videographerId, email)
+    try {
+        console.log(`${phoneNumber} is subscribed to ${videographerId}`);
+        await videographerAccess.addSubscriber(videographerId, phoneNumber);
+    
+        await textService.sendMessage(phoneNumber, `You are now subscribed to ${videographer.firstName} ${videographer.lastName} videos. Whenever a new video is updated by ${videographer.firstName}, you will receive a text message.`);
+        return true;
+    }catch(error) {
+        console.log("error subscribing")
+        throw new Error(`An error occured while subscribing to ${videographer.firstName} ${videographer.lastName}`);
+    }
 }

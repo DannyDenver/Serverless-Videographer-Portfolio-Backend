@@ -13,14 +13,16 @@ export class TextMessageService {
         const accountSid = await manager.getParameter({ Name: 'TwilioAccountId' }).promise();
         const authToken = await manager.getParameter({ Name: 'TwilioAuthToken', WithDecryption: true }).promise();
         const twilioNumber = await manager.getParameter({ Name: 'TwilioNumber' }).promise();
+        
+        console.log(authToken.Parameter.Value);
         const client = require('twilio')(accountSid.Parameter.Value, authToken.Parameter.Value);
 
-        // client.messages
-        //     .create({
-        //         body: message,
-        //         from: twilioNumber.Parameter.Value,
-        //         to: contact
-        //     })
-        //     .then(message => console.log(message.sid));
+        await client.messages
+            .create({
+                body: message,
+                from: twilioNumber.Parameter.Value,
+                to: contact
+            })
+            .then(message => console.log(message.sid));
     }
 }

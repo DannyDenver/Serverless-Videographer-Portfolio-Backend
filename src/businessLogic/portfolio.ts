@@ -2,16 +2,12 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import { PortfolioAccess } from "../dataLayer/databaseAccess/portfolioAccess";
 import { capitalizeWord } from "../utils/StringUtils";
 import { getUserId } from "../lambda/utils";
-import { TextMessageService } from "../serviceLayer/textService";
 
 const videographerAccess = new PortfolioAccess()
-const textService = new TextMessageService();
 
 export async function getPortfolio(event: APIGatewayProxyEvent): Promise<any> {
     let videographerId = decodeURI(event.pathParameters.videographerId);
     console.log('videographerId', videographerId);
-
-    await textService.sendMessage('+13034345697', "Howdy from Twilio");
 
     if (videographerId == "your-portfolio") {
         videographerId = getUserId(event);
