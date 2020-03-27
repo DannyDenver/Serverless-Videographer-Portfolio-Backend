@@ -216,28 +216,6 @@ functions:
           - dynamodb:Scan
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
 
-  GetPortfolio:
-    handler: src/lambda/http/getPortfolio.handler
-    events:
-      - http:
-          method: get
-          path: portfolio/{videographerId}
-          cors: true
-    iamRoleStatements:
-      - Effect: "Allow" 
-        Action:
-        - "xray:PutTraceSegments"
-        Resource: "*"
-      - Effect: Allow
-        Action:
-          - dynamodb:GetItem
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
-      - Effect: Allow
-        Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.FIRST_LAST_NAME_INDEX}
-        
   UpdateVideographerQueue:
     handler: src/lambda/http/updateVideographerQueue.handler
     iamRoleStatementsName: updateVideographQueueRole
@@ -372,6 +350,23 @@ functions:
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
 
+  SendNewVideoNotification:
+    handler: src/lambda/dynamodb/newVideoNotification.handler
+    iamRoleStatementsName: sendNotificationRole
+    events:
+      - stream: 
+          type: dynamodb
+          arn: !GetAtt AppDynamoDBTable.StreamArn
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
+      - Effect: Allow
+        Action:
+          - SSM:GetParameter
+        Resource: '*'
+        
   SendNotifications:
     environment: 
       STAGE: ${self:provider.stage}
@@ -686,6 +681,8 @@ resources:
             KeyType: HASH
           - AttributeName: SK
             KeyType: RANGE
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.MEDIA_TYPE_INDEX}
             KeySchema:

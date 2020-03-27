@@ -139,6 +139,23 @@ export class VideographerAccess {
     return videographerDBtoEntity(result.Item as VideographerDb);
   }
 
+  async getVideographerSubscribers(videographerId: string): Promise<string[]> {
+    console.log('Getting subscribers', videographerId);
+
+    const primaryKey = "USER#" + videographerId;
+    const sortKey = "PROFILE#" + videographerId;
+
+    const result = await this.docClient.get({
+      TableName: this.appTable,
+      Key: {
+        PK: primaryKey,
+        SK: sortKey,
+      },
+    }).promise();
+
+    return result.Item.subscribers;
+  }
+
   async getVideographers(): Promise<Videographer[]> {
     console.log("getting videographers");
     const result = await this.docClient.scan({

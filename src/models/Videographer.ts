@@ -5,5 +5,6 @@ export class Videographer {
     location?: string;
     bio?: string;
     profilePic?: string;
-    coverPhoto?: string
+    coverPhoto?: string;
+    subscribers?: string[];
 }
