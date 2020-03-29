@@ -104,7 +104,7 @@ export class VideographerAccess {
         }
       }).promise();
   
-      if (!resultVideographer.Items) {
+      if (!resultVideographer.Items.length) {
         return `Could not find ${firstName} ${lastName}.`
       }
   

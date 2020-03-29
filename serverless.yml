@@ -125,6 +125,29 @@ functions:
           - SSM:GetParameter
         Resource: '*'
 
+  SMSInbound: 
+      handler: src/lambda/http/sms/inboundSMS.handler
+      events:
+      - http:
+          method: post
+          path: sms
+          cors: true
+          documentation:
+            summary: Inbound SMS messages
+      iamRoleStatements:
+        - Effect: "Allow" 
+          Action:
+          - "xray:PutTraceSegments"
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - dynamodb:UpdateItem
+          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.APP_DB_TABLE}/index/${self:provider.environment.FIRST_LAST_NAME_INDEX}
+
   AddProfilePicture:
     handler: src/lambda/http/videographers/addProfilePicture.handler
     events:
@@ -708,41 +731,3 @@ resources:
               ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.APP_DB_TABLE}
-
-    VideosDynamoDBTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        AttributeDefinitions:
-          - AttributeName: videographerId
-            AttributeType: S
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: timestamp
-            AttributeType: S
-          - AttributeName: type
-            AttributeType: S
-        KeySchema:
-          - AttributeName: videographerId
-            KeyType: HASH
-          - AttributeName: id
-            KeyType: RANGE
-        StreamSpecification:
-          StreamViewType: NEW_IMAGE
-        GlobalSecondaryIndexes:
-          - IndexName: ${self:provider.environment.VIDEO_ID_INDEX}
-            KeySchema:
-            - AttributeName: id
-              KeyType: HASH
-            Projection: 
-              ProjectionType: ALL
-          - IndexName: ${self:provider.environment.VIDEO_TIMESTAMP_INDEX}
-            KeySchema:
-            - AttributeName: type
-              KeyType: HASH
-            - AttributeName: timestamp
-              KeyType: RANGE
-            Projection: 
-              ProjectionType: ALL
-        BillingMode: PAY_PER_REQUEST
-        TableName: ${self:provider.environment.VIDEOS_TABLE}
-
