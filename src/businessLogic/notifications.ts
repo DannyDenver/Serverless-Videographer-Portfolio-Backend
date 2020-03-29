@@ -28,6 +28,24 @@ export async function sendNewVideoNotification(event: DynamoDBStreamEvent) {
     }
 }
 
+export async function processInboundSMS(event: any): Promise<string> {  
+    const message = decodeURIComponent(event.Body.replace(/\+/g, ' '));
+    console.log("Inbound Message", message);
+
+    if (message.toLowerCase().indexOf('unsubscribe') > -1) {
+        const messageArray = message.replace(/\./g, '').split(' ');
+
+        if (messageArray.length > 3) {
+            const firstName = messageArray[2][0].toUpperCase() + messageArray[2].substring(1).toLowerCase();
+            const lastName = messageArray[3][0].toUpperCase() + messageArray[3].substring(1).toLowerCase();
+
+            return await videographerAccess.removeSubscriber(firstName, lastName, decodeURIComponent(event.From));
+        }
+    }
+    
+    return null;
+}
+
 export async function verifyEmail(event: APIGatewayEvent) {
     const email = event.pathParameters.email;
     console.log('Sending verification email to ' + email);

@@ -73,7 +73,7 @@ export async function addSubscriber(event: APIGatewayEvent): Promise<String>  {
         const realNumber = await textService.verifyNumber(phoneNumber);
         if (realNumber) {
             await videographerAccess.addSubscriber(videographerId, phoneNumber);
-            await textService.sendMessage(phoneNumber, `You are now subscribed to ${videographer.firstName} ${videographer.lastName}'s video portfolio.`);
+            await textService.sendMessage(phoneNumber, `You are now subscribed to ${videographer.firstName} ${videographer.lastName}'s video portfolio. To unsubscribe from text notifications reply with message 'Unsubscribe from ${videographer.firstName} ${videographer.lastName}.`);
             return `${phoneNumber} is subscribed to ${videographerId}`;
         }else {
             throw new Error(`Number ${phoneNumber} cannot be verified or is not in E.164 international numbering format.`);
